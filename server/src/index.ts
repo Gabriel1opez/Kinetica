@@ -91,24 +91,29 @@ io.on('connection', (socket) => {
     gameManager.setReady(socket.id, ready);
   });
 
-  // RUN RACE
+  // RUN RACE (server-side science simulation — called at START of race)
   socket.on('race:run', (_, callback) => {
     const result = gameManager.runRace(socket.id);
-    if (result) {
-      // Broadcast race result to all players
-      const room = gameManager.getRoomForPlayer(socket.id);
-      if (room) {
-        io.to(room.code).emit('race:result', {
-          playerId: socket.id,
-          result,
-        });
-        // After a delay, advance to next turn
-        setTimeout(() => {
-          if (room) gameManager.nextTurn(room);
-        }, 2000);
-      }
-    }
+    // Just return the science simulation result — do NOT advance turn
+    // The client will send race:finish when the platformer is complete
     callback({ success: !!result, result });
+  });
+
+  // FINISH RACE (called when player finishes the platformer or times out)
+  socket.on('race:finish', ({ platformTime }, callback) => {
+    const room = gameManager.getRoomForPlayer(socket.id);
+    if (room) {
+      // Broadcast that this player finished
+      io.to(room.code).emit('race:player-finished', {
+        playerId: socket.id,
+        platformTime,
+      });
+      // Advance to next player's turn
+      setTimeout(() => {
+        if (room) gameManager.nextTurn(room);
+      }, 3000);
+    }
+    callback({ success: true });
   });
 
   // ADVANCE PHASE (host)

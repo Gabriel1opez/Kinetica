@@ -53,7 +53,19 @@ export function useSocket() {
       setRoomState(prev => prev ? { ...prev, phase: data.phase, currentPlanet: data.planet || prev.currentPlanet } : null);
     });
 
+    socket.on('game:next-turn', (data: { currentPlayerId: string; playerIndex: number }) => {
+      setRoomState(prev => prev ? {
+        ...prev,
+        currentPlayerId: data.currentPlayerId,
+        currentPlayerIndex: data.playerIndex,
+      } : null);
+    });
+
     socket.on('race:result', (data: { playerId: string; result: any }) => {
+      setRaceResult(data);
+    });
+
+    socket.on('race:player-finished', (data: { playerId: string; platformTime: number }) => {
       setRaceResult(data);
     });
 
@@ -100,6 +112,12 @@ export function useSocket() {
     });
   }, []);
 
+  const finishRace = useCallback((platformTime: number): Promise<{ success: boolean }> => {
+    return new Promise((resolve) => {
+      socketRef.current?.emit('race:finish', { platformTime }, resolve);
+    });
+  }, []);
+
   const advance = useCallback(() => {
     socketRef.current?.emit('game:advance');
   }, []);
@@ -116,6 +134,7 @@ export function useSocket() {
     craftPotion,
     setReady,
     runRace,
+    finishRace,
     advance,
     setRaceResult,
   };

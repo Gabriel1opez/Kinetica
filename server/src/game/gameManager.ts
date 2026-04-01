@@ -245,6 +245,10 @@ export class GameManager {
       }
     } else if (currentIdx < phaseOrder.length - 1) {
       room.phase = phaseOrder[currentIdx + 1];
+      // Reset player turn index when entering racing phase
+      if (room.phase === 'racing') {
+        room.currentPlayerIndex = 0;
+      }
     }
 
     this.io.to(room.code).emit('game:phase-change', {

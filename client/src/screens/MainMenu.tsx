@@ -157,8 +157,12 @@ export default function MainMenu({ socket, onJoined }: Props) {
         <h1 className="font-pixel text-4xl md:text-5xl text-retro-yellow glow-text-gold mb-1 text-center animate-glitch tracking-widest">
           KINETICA
         </h1>
-        <p className="font-pixel text-[9px] text-retro-cyan mb-10 text-center tracking-[0.25em]">
+        <p className="font-pixel text-[10px] text-retro-cyan mb-2 text-center tracking-[0.25em]">
           ENGINEERED TO WIN
+        </p>
+        <p className="font-pixel text-[8px] text-retro-white/40 mb-10 text-center max-w-md leading-relaxed">
+          AN 8-BIT MULTIPLAYER SCIENCE RACING GAME<br/>
+          SPORTS MEDICINE &bull; CHEMISTRY &bull; PHYSICS
         </p>
 
         {/* Buttons */}

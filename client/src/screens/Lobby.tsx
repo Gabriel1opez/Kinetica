@@ -80,12 +80,37 @@ export default function Lobby({ socket }: Props) {
         </div>
       </div>
 
-      {/* About */}
-      <div className="pixel-card max-w-lg mb-8 text-center">
-        <p className="font-pixel text-[7px] text-retro-white/60 leading-relaxed">
-          CONFIGURE YOUR ATHLETE USING REAL SCIENCE &mdash; MUSCLE TRAINING,
-          CHEMISTRY POTIONS, AND PROJECTILE PHYSICS &mdash; THEN RACE ACROSS
-          EARTH, MARS, AND MERCURY.
+      {/* How to Play */}
+      <div className="pixel-card max-w-lg mb-8">
+        <p className="font-pixel text-[9px] text-retro-yellow mb-3 text-center">HOW TO PLAY</p>
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <span className="font-pixel text-[9px] text-retro-pink flex-shrink-0">1.</span>
+            <p className="font-pixel text-[8px] text-retro-white/70 leading-relaxed">
+              CONFIGURE your athlete&apos;s muscles, energy systems, and body mass using real sports science
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <span className="font-pixel text-[9px] text-retro-cyan flex-shrink-0">2.</span>
+            <p className="font-pixel text-[8px] text-retro-white/70 leading-relaxed">
+              BREW potions in the chemistry lab by combining real biochemical elements
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <span className="font-pixel text-[9px] text-retro-yellow flex-shrink-0">3.</span>
+            <p className="font-pixel text-[8px] text-retro-white/70 leading-relaxed">
+              LAUNCH your athlete with a catapult &mdash; angle and force follow projectile motion physics (R = v&sup2;sin(2&theta;)/g)
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <span className="font-pixel text-[9px] text-retro-green flex-shrink-0">4.</span>
+            <p className="font-pixel text-[8px] text-retro-white/70 leading-relaxed">
+              RACE across 5 science zones on Earth, Mars, and Mercury &mdash; your choices determine performance!
+            </p>
+          </div>
+        </div>
+        <p className="font-pixel text-[8px] text-retro-white/40 mt-3 text-center">
+          CONTROLS: ARROW KEYS or WASD to move &bull; SPACE to jump
         </p>
       </div>
 

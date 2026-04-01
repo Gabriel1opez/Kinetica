@@ -36,7 +36,7 @@ export default function Results({ socket }: Props) {
     <div className="min-h-screen px-4 py-8 max-w-4xl mx-auto animate-fade-in">
       {/* Header */}
       <div className="text-center mb-6">
-        <p className="font-pixel text-[7px] text-retro-white/40 mb-1">RACE RESULTS</p>
+        <p className="font-pixel text-[8px] text-retro-white/40 mb-1">RACE RESULTS</p>
         <h2 className="font-pixel text-xl glow-text mb-1" style={{ color: planet.color }}>
           {planet.label}
         </h2>
@@ -65,7 +65,7 @@ export default function Results({ socket }: Props) {
                   {RANK_LABELS[i] || `#${i+1}`}
                 </div>
                 {/* Avatar */}
-                <div className="w-8 h-8 flex items-center justify-center border font-pixel text-[6px] flex-shrink-0"
+                <div className="w-8 h-8 flex items-center justify-center border font-pixel text-[8px] flex-shrink-0"
                   style={{ borderColor: av.color, color: av.color, background: `${av.color}18` }}>
                   {av.label}
                 </div>
@@ -74,7 +74,7 @@ export default function Results({ socket }: Props) {
                   <p className="font-pixel text-[9px] text-retro-white truncate">
                     {player.name}{isMe ? ' [YOU]' : ''}
                   </p>
-                  <p className="font-pixel text-[6px] text-retro-white/40 mt-0.5">
+                  <p className="font-pixel text-[8px] text-retro-white/40 mt-0.5">
                     CUMULATIVE: {player.totalTime.toFixed(2)}s
                   </p>
                 </div>
@@ -83,7 +83,7 @@ export default function Results({ socket }: Props) {
                   <p className="font-pixel text-base glow-text-gold text-retro-yellow">
                     {latest?.totalTime?.toFixed(2) ?? '--'}s
                   </p>
-                  <p className="font-pixel text-[5px] text-retro-white/30">THIS RACE</p>
+                  <p className="font-pixel text-[7px] text-retro-white/30">THIS RACE</p>
                 </div>
               </div>
             );
@@ -100,7 +100,7 @@ export default function Results({ socket }: Props) {
             {myResult.feedback.map((fb: string, i: number) => (
               <div key={i} className="p-2 border border-retro-border bg-black/20 flex gap-2">
                 <span className="font-pixel text-[8px] text-retro-cyan flex-shrink-0">&gt;</span>
-                <p className="font-pixel text-[6px] text-retro-white/75 leading-relaxed">{fb}</p>
+                <p className="font-pixel text-[8px] text-retro-white/75 leading-relaxed">{fb}</p>
               </div>
             ))}
           </div>

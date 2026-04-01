@@ -9,6 +9,7 @@ const MUSCLES = [
     effect: 'Sprint Speed',
     color:  '#ff3366',
     game:   'Faster horizontal movement',
+    science: 'Primary knee extensors. Type IIa fast-twitch fibers generate explosive force for sprinting. Training increases cross-sectional area via muscle hypertrophy (sliding filament theory).',
   },
   {
     key:    'hamstrings',
@@ -18,6 +19,7 @@ const MUSCLES = [
     effect: 'Acceleration',
     color:  '#ffd700',
     game:   'Quicker speed build-up',
+    science: 'Posterior chain muscles responsible for hip extension and knee flexion. Critical for acceleration phase where ground reaction force (F=ma) propels the body forward.',
   },
   {
     key:    'calves',
@@ -27,6 +29,7 @@ const MUSCLES = [
     effect: 'Jump Height',
     color:  '#39ff14',
     game:   'Higher jumps over obstacles',
+    science: 'Gastrocnemius and soleus muscles enable plantar flexion. Elastic energy stored in the Achilles tendon (Hooke\'s Law: F=-kx) enhances jump height.',
   },
   {
     key:    'core',
@@ -36,6 +39,7 @@ const MUSCLES = [
     effect: 'Efficiency',
     color:  '#00d4ff',
     game:   'Better control + stamina',
+    science: 'Transversus abdominis and obliques stabilize the trunk. Reduced energy waste through efficient force transfer — Newton\'s Third Law in action.',
   },
   {
     key:    'upperBody',
@@ -45,6 +49,7 @@ const MUSCLES = [
     effect: 'Swim Speed',
     color:  '#cc88ff',
     game:   'Swim section advantage',
+    science: 'Deltoids and latissimus dorsi provide propulsive force in aquatic environments. Drag force (Fd = ½ρv²CdA) is overcome by trained upper body.',
   },
 ];
 
@@ -110,14 +115,15 @@ export default function Configuration({ socket }: Props) {
       {/* Header */}
       <div className="text-center mb-6">
         <h2 className="font-pixel text-lg text-retro-yellow glow-text-gold mb-1">RUNNER CONFIG</h2>
-        <p className="font-pixel text-[7px] text-retro-cyan/60 tracking-widest">SPORTS MEDICINE & EXERCISE PHYSIOLOGY</p>
+        <p className="font-pixel text-[9px] text-retro-cyan/60 tracking-widest">SPORTS MEDICINE & EXERCISE PHYSIOLOGY</p>
+        <p className="font-pixel text-[8px] text-retro-white/50 mt-2">Configure your athlete's physiology. Your choices directly affect race performance through real biomechanics.</p>
       </div>
 
       {/* Muscle Selection */}
       <div className="pixel-card mb-5">
         <div className="flex items-baseline justify-between mb-1">
           <p className="section-title">MUSCLE TRAINING</p>
-          <p className="font-pixel text-[7px] text-retro-white/40">{selectedCount}/3 SELECTED</p>
+          <p className="font-pixel text-[9px] text-retro-white/40">{selectedCount}/3 SELECTED</p>
         </div>
         <p className="section-subtitle">Select up to 3 muscle groups to enhance for the race</p>
 
@@ -141,9 +147,10 @@ export default function Configuration({ socket }: Props) {
                   style={{ borderColor: m.color, background: `${m.color}22`, color: m.color }}>
                   {m.label}
                 </div>
-                <p className="font-pixel text-[7px] text-retro-white mb-1">{m.full}</p>
-                <p className="font-pixel text-[6px]" style={{ color: m.color }}>{m.func}</p>
-                <p className="font-pixel text-[5px] text-retro-white/40 mt-1">{m.game}</p>
+                <p className="font-pixel text-[9px] text-retro-white mb-1">{m.full}</p>
+                <p className="font-pixel text-[8px]" style={{ color: m.color }}>{m.func}</p>
+                <p className="font-pixel text-[7px] text-retro-white/40 mt-1">{m.game}</p>
+                {selected && <p className="font-pixel text-[7px] text-retro-white/50 mt-1 leading-tight">{m.science}</p>}
               </button>
             );
           })}
@@ -156,15 +163,15 @@ export default function Configuration({ socket }: Props) {
         <p className="section-subtitle">Distribute 100 points — affects which race sections you excel in</p>
 
         {[
-          { key: 'atpPc',    label: 'ATP-PC',    desc: '0–10s explosive burst',   color: '#ff3366', thumb: '#ff3366' },
-          { key: 'anaerobic',label: 'ANAEROBIC', desc: '10–60s high intensity',  color: '#ff6b35', thumb: '#ff6b35' },
-          { key: 'aerobic',  label: 'AEROBIC',   desc: '60s+ sustained effort',  color: '#39ff14', thumb: '#39ff14' },
+          { key: 'atpPc',    label: 'ATP-PC',    desc: 'Phosphocreatine system: ATP → ADP + Pi + Energy. Immediate energy for 0-10 seconds. No oxygen required (anaerobic alactic).',   color: '#ff3366', thumb: '#ff3366' },
+          { key: 'anaerobic',label: 'ANAEROBIC', desc: 'Glycolytic pathway: Glucose → 2 Pyruvate + 2 ATP. Powers 10-60s efforts. Produces lactic acid (H⁺ ions cause fatigue).',  color: '#ff6b35', thumb: '#ff6b35' },
+          { key: 'aerobic',  label: 'AEROBIC',   desc: 'Oxidative phosphorylation: 36 ATP per glucose via Krebs cycle + ETC. Sustained energy for 60s+ but requires O₂ delivery (VO₂max).',  color: '#39ff14', thumb: '#39ff14' },
         ].map(sys => (
           <div key={sys.key} className="mb-4">
             <div className="flex justify-between items-end mb-1">
               <div>
                 <span className="font-pixel text-[8px]" style={{ color: sys.color }}>{sys.label}</span>
-                <span className="font-pixel text-[6px] text-retro-white/40 ml-3">{sys.desc}</span>
+                <span className="font-pixel text-[8px] text-retro-white/40 ml-3">{sys.desc}</span>
               </div>
               <span className="font-pixel text-[10px] text-retro-white">
                 {energy[sys.key as keyof typeof energy]}%
@@ -195,7 +202,7 @@ export default function Configuration({ socket }: Props) {
       {/* Body Mass */}
       <div className="pixel-card mb-5">
         <p className="section-title">BODY MASS</p>
-        <p className="section-subtitle">F = ma — heavier means more momentum but slower acceleration</p>
+        <p className="section-subtitle">Newton's Second Law: F = ma. Greater mass requires more force to accelerate but provides greater momentum (p = mv) for obstacle resistance.</p>
         <div className="flex items-center gap-3">
           <span className="font-pixel text-[7px] text-retro-white/40">50kg</span>
           <input type="range" min={50} max={120} value={mass}

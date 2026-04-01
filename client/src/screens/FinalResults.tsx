@@ -159,7 +159,7 @@ export default function FinalResults({ socket, onBackToMenu }: Props) {
                     {player.raceResults?.map((r: any, j: number) => {
                       const pd = PLANET_DISPLAY[r.planet] || { label: r.planet, color: '#ffffff' };
                       return (
-                        <span key={j} className="font-pixel text-[5px]" style={{ color: pd.color + 'aa' }}>
+                        <span key={j} className="font-pixel text-[7px]" style={{ color: pd.color + 'aa' }}>
                           {pd.label}: {r.totalTime.toFixed(1)}s
                         </span>
                       );
@@ -171,7 +171,7 @@ export default function FinalResults({ socket, onBackToMenu }: Props) {
                   <p className="font-pixel text-xl glow-text-gold text-retro-yellow">
                     {player.totalTime.toFixed(2)}s
                   </p>
-                  <p className="font-pixel text-[5px] text-retro-white/30">TOTAL</p>
+                  <p className="font-pixel text-[7px] text-retro-white/30">TOTAL</p>
                 </div>
               </div>
             );
@@ -195,8 +195,8 @@ export default function FinalResults({ socket, onBackToMenu }: Props) {
                 <div className="space-y-1">
                   {pf.map((f: any, i: number) => (
                     <div key={i} className="p-2 border border-retro-border bg-black/20 flex gap-2">
-                      <span className="font-pixel text-[6px] text-retro-cyan flex-shrink-0">&gt;</span>
-                      <p className="font-pixel text-[5px] text-retro-white/70 leading-relaxed">{f.text}</p>
+                      <span className="font-pixel text-[8px] text-retro-cyan flex-shrink-0">&gt;</span>
+                      <p className="font-pixel text-[7px] text-retro-white/70 leading-relaxed">{f.text}</p>
                     </div>
                   ))}
                 </div>
@@ -210,25 +210,43 @@ export default function FinalResults({ socket, onBackToMenu }: Props) {
             <div className="grid md:grid-cols-3 gap-4">
               {[
                 {
-                  label: 'SPORTS MEDICINE',
+                  label: 'SPORTS MEDICINE (SEHS)',
                   color: '#ff3366',
-                  items: ['Muscle group specialization', 'ATP-PC / Anaerobic / Aerobic', 'Fatigue & altitude oxygen', 'Sliding filament theory'],
+                  items: [
+                    'Muscle hypertrophy via sliding filament theory',
+                    'ATP-PC (0-10s) / Anaerobic glycolysis (10-60s) / Aerobic oxidative (60s+)',
+                    'VO₂max determines sustained performance capacity',
+                    'Type IIa fast-twitch fibers for explosive power',
+                    'Fatigue from H⁺ ion accumulation (lactic acid)',
+                  ],
                 },
                 {
                   label: 'PHYSICS',
                   color: '#ffd700',
-                  items: ['R = v²·sin(2θ)/g', 'Gravity varies by planet', 'F = ma', 'Optimal angle = 45°'],
+                  items: [
+                    'Projectile motion: R = v₀²·sin(2θ)/g',
+                    'Gravity varies by planet (Earth 9.8, Mars 3.7, Mercury 3.7 m/s²)',
+                    'Newton\'s Second Law: F = ma (mass affects acceleration)',
+                    'Optimal launch angle = 45° (maximizes sin(2θ))',
+                    'Momentum: p = mv (heavier athletes resist obstacles)',
+                  ],
                 },
                 {
                   label: 'CHEMISTRY',
                   color: '#39ff14',
-                  items: ['Aerobic respiration', 'Na⁺/K⁺ pump', 'Hemoglobin & O₂', 'pH buffering & lactic acid'],
+                  items: [
+                    'Aerobic respiration: C₆H₁₂O₆ + 6O₂ → 6CO₂ + 6H₂O + 36 ATP',
+                    'Na⁺/K⁺ ATPase pump maintains membrane potential',
+                    'Hemoglobin-O₂ binding (Fe²⁺ in heme groups)',
+                    'Bicarbonate buffering: H⁺ + HCO₃⁻ → H₂CO₃',
+                    'Creatine phosphate: PCr + ADP → ATP + Cr',
+                  ],
                 },
               ].map(s => (
                 <div key={s.label}>
-                  <p className="font-pixel text-[6px] mb-2" style={{ color: s.color }}>{s.label}</p>
+                  <p className="font-pixel text-[8px] mb-2" style={{ color: s.color }}>{s.label}</p>
                   {s.items.map((item, i) => (
-                    <p key={i} className="font-pixel text-[5px] text-retro-white/50 mb-1">- {item}</p>
+                    <p key={i} className="font-pixel text-[7px] text-retro-white/50 mb-1">- {item}</p>
                   ))}
                 </div>
               ))}

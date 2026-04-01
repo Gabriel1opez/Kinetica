@@ -91,10 +91,11 @@ const LEVELS: Record<string, Level> = {
     ],
     finishX: 3500,
     sectionTags: [
-      { x: 80,   label: 'SPRINT',   color: '#ff3366' },
-      { x: 900,  label: 'HURDLES',  color: '#ffd700' },
-      { x: 1700, label: 'JUMP',     color: '#39ff14' },
-      { x: 2700, label: 'OBSTACLE', color: '#ff6b35' },
+      { x: 80,   label: 'A: LAUNCH ZONE',    color: '#ff3366' },
+      { x: 500,  label: 'B: SPRINT TERRAIN',  color: '#ffd700' },
+      { x: 1200, label: 'C: WATER SECTION',   color: '#00d4ff' },
+      { x: 2000, label: 'D: JUMP HURDLES',    color: '#39ff14' },
+      { x: 2800, label: 'E: FATIGUE SPRINT',  color: '#ff6b35' },
     ],
   },
 
@@ -133,10 +134,11 @@ const LEVELS: Record<string, Level> = {
     ],
     finishX: 3500,
     sectionTags: [
-      { x: 80,   label: 'SPRINT',    color: '#ff6b35' },
-      { x: 850,  label: 'LONG JUMP', color: '#ffd700' },
-      { x: 1800, label: 'ASCENT',    color: '#ff3366' },
-      { x: 2700, label: 'GAUNTLET',  color: '#ff073a' },
+      { x: 80,   label: 'A: LAUNCH ZONE',     color: '#ff6b35' },
+      { x: 500,  label: 'B: LOW-G LEAPS',     color: '#ffd700' },
+      { x: 1200, label: 'C: DUST SPRINT',      color: '#ff3366' },
+      { x: 2000, label: 'D: OBSTACLE RIDGE',   color: '#ff073a' },
+      { x: 2700, label: 'E: FLOAT SPRINT',     color: '#ffd700' },
     ],
   },
 
@@ -186,10 +188,11 @@ const LEVELS: Record<string, Level> = {
     ],
     finishX: 3500,
     sectionTags: [
-      { x: 50,   label: 'HEAT ZONE', color: '#ff6b35' },
-      { x: 700,  label: 'INFERNO',   color: '#ff3366' },
-      { x: 1400, label: 'MOLTEN',    color: '#ff073a' },
-      { x: 2500, label: 'FURNACE',   color: '#ffd700' },
+      { x: 50,   label: 'A: LAUNCH ZONE',    color: '#ff6b35' },
+      { x: 500,  label: 'B: HEAT SPRINT',     color: '#ff3366' },
+      { x: 1100, label: 'C: HEATED PLATES',   color: '#ff073a' },
+      { x: 1800, label: 'D: O₂ STRESS ZONE', color: '#ffd700' },
+      { x: 2500, label: 'E: COLLAPSE SPRINT', color: '#ff073a' },
     ],
   },
 };
@@ -197,6 +200,14 @@ const LEVELS: Record<string, Level> = {
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
+function getCurrentSection(worldX: number, level: Level): string {
+  const tags = level.sectionTags;
+  for (let i = tags.length - 1; i >= 0; i--) {
+    if (worldX >= tags[i].x) return String.fromCharCode(65 + i); // 'A', 'B', 'C', 'D', 'E'
+  }
+  return 'A';
+}
+
 function getPlayerPhysics(config: any, planet: string) {
   const m  = config?.muscles  || {};
   const e  = config?.energy   || { atpPc: 33, anaerobic: 34, aerobic: 33 };
@@ -324,10 +335,19 @@ export default function Racing({ socket }: Props) {
       return img;
     }
 
-    const pColor = '#00d4ff';
-    const pDark  = '#0088aa';
+    // Character colors based on player's avatar and muscle choices
+    const myConfig = me?.config || {};
+    const myMuscles = myConfig.muscles || {};
+    const muscleCount = Object.values(myMuscles).filter(Boolean).length;
+
+    // Stronger muscles = more vibrant color
+    const pColor = muscleCount >= 3 ? '#ff3366' : muscleCount >= 2 ? '#ffd700' : '#00d4ff';
+    const pDark  = muscleCount >= 3 ? '#aa1144' : muscleCount >= 2 ? '#aa8800' : '#0088aa';
     const pSkin  = '#ffcc99';
-    const pHair  = '#333366';
+    const pHair  = myMuscles.upperBody ? '#663399' : '#333366';
+
+    // Size scales with mass
+    const massScale = (myConfig.mass || 70) / 70; // 1.0 at 70kg
 
     // Draw a pixel character at given pose
     function drawChar(ctx: CanvasRenderingContext2D, legOffset: number, armOffset: number, squish = 0) {
@@ -459,23 +479,87 @@ export default function Racing({ socket }: Props) {
 
   // ── Start race ────────────────────────────────────────────────────────────
   const startRace = useCallback(async () => {
-    // Countdown 3-2-1
-    setGameStatus('countdown');
-    statusRef.current = 'countdown';
-    for (let i = 3; i >= 1; i--) {
-      setCountdownNum(i);
-      await new Promise(r => setTimeout(r, 900));
-    }
-    // Go!
-    setGameStatus('playing');
-    statusRef.current = 'playing';
-    pRef.current.startTime = performance.now();
+    // Calculate catapult landing position from config
+    const catConfig = me?.config?.catapult || { angle: 45, force: 50 };
+    const g = { earth: 9.8, mars: 3.7, mercury: 3.7 }[planetKey] || 9.8;
+    const mass = me?.config?.mass || 70;
+    const v0 = 5 + (catConfig.force / 100) * 25;
+    const mf = 70 / mass;
+    const rad = (catConfig.angle * Math.PI) / 180;
+    const vx = v0 * Math.cos(rad) * mf;
+    const vy = v0 * Math.sin(rad) * mf;
+    const tFly = (2 * vy) / g;
+    const landingDist = vx * tFly;
+    // Convert landing distance to world pixels (1m ≈ 12px)
+    const landingX = Math.min(150 + landingDist * 12, 600);
 
-    // Fire off server race calc in parallel
+    // Set starting position based on catapult
+    pRef.current.worldX = 150;
+    pRef.current.worldY = GROUND_Y;
+    pRef.current.vx = 0;
+    pRef.current.vy = 0;
+    pRef.current.health = 100;
+    pRef.current.stamina = physics.startStamina;
+    pRef.current.hits = 0;
+    pRef.current.elapsed = 0;
+    pRef.current.onGround = true;
+    pRef.current.lastSafeX = 150;
+    pRef.current.state = 'idle';
+    pRef.current.explosions = [];
+
+    // Run server science simulation in parallel (for feedback later)
     socket.runRace().then((res: any) => {
       if (res.success && res.result) setServerResult(res.result);
     });
-  }, [socket]);
+
+    // Catapult launch animation
+    setGameStatus('countdown');
+    statusRef.current = 'countdown';
+
+    // Animate catapult launch (fly to landing position)
+    const launchDuration = Math.min(tFly * 400, 2000); // scale to animation time
+    const startTime = performance.now();
+    const launchStartX = 150;
+    const launchStartY = GROUND_Y;
+
+    await new Promise<void>((resolve) => {
+      const animLaunch = () => {
+        const elapsed = performance.now() - startTime;
+        const progress = Math.min(elapsed / launchDuration, 1);
+
+        // Parabolic arc
+        const t = progress;
+        pRef.current.worldX = launchStartX + (landingX - launchStartX) * t;
+        pRef.current.worldY = launchStartY - Math.sin(t * Math.PI) * Math.min(landingDist * 3, 200);
+        pRef.current.state = 'jump';
+        pRef.current.facing = 1;
+
+        if (progress < 1) {
+          requestAnimationFrame(animLaunch);
+        } else {
+          // Land
+          pRef.current.worldX = landingX;
+          pRef.current.worldY = GROUND_Y;
+          pRef.current.onGround = true;
+          pRef.current.lastSafeX = landingX;
+          pRef.current.state = 'idle';
+          resolve();
+        }
+      };
+      requestAnimationFrame(animLaunch);
+    });
+
+    // Countdown 3-2-1
+    for (let i = 3; i >= 1; i--) {
+      setCountdownNum(i);
+      await new Promise(r => setTimeout(r, 700));
+    }
+
+    // GO!
+    setGameStatus('playing');
+    statusRef.current = 'playing';
+    pRef.current.startTime = performance.now();
+  }, [socket, planetKey, me, physics]);
 
   // ── Game loop ─────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -497,8 +581,24 @@ export default function Racing({ socket }: Props) {
       const wLeft  = keys.has('ArrowLeft')  || keys.has('KeyA');
       const wJump  = jumpRef.current;
 
+      // Section-based science effects
+      const section = getCurrentSection(p.worldX, level);
+      let sectionSpeedMod = 1;
+      let sectionStaminaMod = 1;
+
+      // Water section: upper body muscles matter
+      if (section === 'C') {
+        const hasUpperBody = me?.config?.muscles?.upperBody;
+        sectionSpeedMod = hasUpperBody ? 0.85 : 0.55; // Upper body trained = less slowdown
+      }
+      // Fatigue/Heat sections: aerobic energy + potions matter
+      if (section === 'E' || section === 'D') {
+        const aerobic = me?.config?.energy?.aerobic || 33;
+        sectionStaminaMod = aerobic > 50 ? 0.7 : 1.3; // High aerobic = less fatigue drain
+      }
+
       // Stamina-based speed penalty
-      const speedMult = p.stamina < 25 ? 0.55 : p.stamina < 50 ? 0.78 : 1;
+      const speedMult = (p.stamina < 25 ? 0.55 : p.stamina < 50 ? 0.78 : 1) * sectionSpeedMod;
       const ms = physics.maxSpeed * speedMult;
 
       // Horizontal movement
@@ -599,7 +699,7 @@ export default function Racing({ socket }: Props) {
 
       // ── Stamina ───────────────────────────────────────────────────────────
       const moving = Math.abs(p.vx) > 0.5;
-      const drain  = moving ? physics.staminaDrain : physics.staminaDrain * 0.3;
+      const drain  = (moving ? physics.staminaDrain : physics.staminaDrain * 0.3) * sectionStaminaMod;
       p.stamina = Math.max(0, p.stamina - drain * dt);
 
       // ── Animation state ───────────────────────────────────────────────────
@@ -629,6 +729,14 @@ export default function Racing({ socket }: Props) {
       if (p.worldX >= level.finishX && statusRef.current === 'playing') {
         statusRef.current = 'complete';
         setGameStatus('complete');
+        socket.finishRace(p.elapsed);
+      }
+
+      // ── 2-minute timeout ──────────────────────────────────────────────────
+      if (p.elapsed >= 120 && statusRef.current === 'playing') {
+        statusRef.current = 'complete';
+        setGameStatus('complete');
+        socket.finishRace(120);
       }
     }
 
@@ -856,15 +964,23 @@ export default function Racing({ socket }: Props) {
       const stColor = p.stamina > 50 ? '#00d4ff' : p.stamina > 25 ? '#ffd700' : '#ff6b35';
       drawBar(ctx, 14, 34, 150, 12, p.stamina / 100, stColor, 'EN');
 
-      // Timer (top right)
+      // Timer (top right) — shows elapsed AND remaining time
       if (statusRef.current === 'playing' || statusRef.current === 'complete') {
+        const remaining = Math.max(0, 120 - p.elapsed);
+        const timerColor = remaining < 20 ? '#ff073a' : remaining < 40 ? '#ffd700' : '#ffd700';
         ctx.save();
-        ctx.fillStyle = '#ffd700';
-        ctx.shadowColor = '#ffd700';
+        ctx.fillStyle = timerColor;
+        ctx.shadowColor = timerColor;
         ctx.shadowBlur  = 6;
         ctx.font = '9px "Press Start 2P"';
         ctx.textAlign = 'right';
         ctx.fillText(p.elapsed.toFixed(2) + 's', CW - 14, 24);
+        // Time remaining warning
+        if (remaining < 30) {
+          ctx.fillStyle = '#ff073a';
+          ctx.font = '7px "Press Start 2P"';
+          ctx.fillText(remaining.toFixed(0) + 's LEFT', CW - 14, 38);
+        }
         ctx.restore();
       }
 
@@ -877,6 +993,31 @@ export default function Racing({ socket }: Props) {
       ctx.textAlign = 'center';
       ctx.fillText(PLANET_LABELS[planetKey] || planetKey.toUpperCase(), CW / 2, 22);
       ctx.restore();
+
+      // Current section indicator (bottom left)
+      if (statusRef.current === 'playing') {
+        const curSection = getCurrentSection(p.worldX, level);
+        const sectionTag = level.sectionTags.find((_, i) => String.fromCharCode(65 + i) === curSection);
+        if (sectionTag) {
+          ctx.save();
+          ctx.fillStyle = sectionTag.color;
+          ctx.shadowColor = sectionTag.color;
+          ctx.shadowBlur = 6;
+          ctx.font = '8px "Press Start 2P"';
+          ctx.textAlign = 'left';
+          ctx.fillText(sectionTag.label, 14, CH - 14);
+          ctx.restore();
+        }
+
+        // Progress bar (distance to finish)
+        const progress = Math.min(p.worldX / level.finishX, 1);
+        ctx.fillStyle = 'rgba(0,0,0,0.4)';
+        ctx.fillRect(CW / 2 - 100, CH - 14, 200, 6);
+        ctx.fillStyle = colors.accent;
+        ctx.fillRect(CW / 2 - 100, CH - 14, 200 * progress, 6);
+        ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+        ctx.strokeRect(CW / 2 - 100, CH - 14, 200, 6);
+      }
 
       // Controls hint (bottom, fade out after first jump)
       if (p.hits === 0 && p.elapsed < 6 && statusRef.current === 'playing') {
@@ -941,7 +1082,7 @@ export default function Racing({ socket }: Props) {
     rafRef.current = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(rafRef.current);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [spritesReady, planetKey]);
+  }, [spritesReady, planetKey, socket]);
 
   // sync statusRef when state changes
   useEffect(() => { statusRef.current = gameStatus; }, [gameStatus]);
