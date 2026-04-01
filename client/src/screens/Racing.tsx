@@ -799,6 +799,7 @@ export default function Racing({ socket }: Props) {
             p.worldY  = plat.surfaceY;
             p.vy      = 0;
             p.onGround = true;
+            if (p.vx > 0) p.lastSafeX = p.worldX;
             break;
           }
         }
@@ -842,14 +843,15 @@ export default function Racing({ socket }: Props) {
 
       // ── Stamina ───────────────────────────────────────────────────────────
       const moving = Math.abs(p.vx) > 0.5;
-      if (moving) {
-        // Drain stamina — sprinting drains 3x faster
-        const sprintDrainMult = p.sprinting ? 3 : 1;
-        const drain = physics.staminaDrain * sectionStaminaMod * sprintDrainMult;
-        p.stamina = Math.max(0, p.stamina - drain * dt);
+      if (p.sprinting && moving) {
+        // Sprinting: heavy drain
+        p.stamina = Math.max(0, p.stamina - physics.staminaDrain * sectionStaminaMod * 3 * dt);
+      } else if (moving) {
+        // Walking: very light drain
+        p.stamina = Math.max(0, p.stamina - physics.staminaDrain * sectionStaminaMod * 0.3 * dt);
       } else if (p.onGround) {
-        // Regenerate stamina when standing still on ground
-        p.stamina = Math.min(100, p.stamina + 0.25 * dt);
+        // Standing still: regenerate
+        p.stamina = Math.min(140, p.stamina + 0.35 * dt);
       }
 
       // ── Dust particles — landing and sprinting ─────────────────────────
@@ -1102,93 +1104,124 @@ export default function Racing({ socket }: Props) {
         ctx.restore();
       }
 
-      // ── Obstacles (detailed pixel art) ────────────────────────────
+      // ── Planet-specific obstacles ────────────────────────────────
       for (const obs of level.obstacles) {
         const ox = obs.x - camX;
         if (ox > CW + 60 || ox + obs.w < -60) continue;
+        const ocx = ox + obs.w / 2;
+        const oby = obs.y + obs.h; // bottom
 
         if (obs.type === 'spike') {
-          // Multi-layer spike with metallic look
-          const scx = ox + obs.w / 2;
           ctx.save();
-          ctx.shadowColor = '#ff073a';
-          ctx.shadowBlur = 8;
-          // Base
-          ctx.fillStyle = '#661111';
-          ctx.fillRect(ox - 1, obs.y + obs.h - 4, obs.w + 2, 4);
-          // Spike body (dark)
-          ctx.fillStyle = '#880022';
-          ctx.beginPath();
-          ctx.moveTo(scx, obs.y);
-          ctx.lineTo(ox, obs.y + obs.h);
-          ctx.lineTo(ox + obs.w, obs.y + obs.h);
-          ctx.closePath();
-          ctx.fill();
-          // Spike highlight (left face lighter)
-          ctx.fillStyle = '#cc0033';
-          ctx.beginPath();
-          ctx.moveTo(scx, obs.y);
-          ctx.lineTo(scx, obs.y + obs.h);
-          ctx.lineTo(ox, obs.y + obs.h);
-          ctx.closePath();
-          ctx.fill();
-          // Tip glow
-          ctx.fillStyle = '#ff3366';
-          ctx.fillRect(scx - 1, obs.y, 2, 4);
-          // Outline
-          ctx.strokeStyle = '#ff073a';
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.moveTo(scx, obs.y);
-          ctx.lineTo(ox, obs.y + obs.h);
-          ctx.lineTo(ox + obs.w, obs.y + obs.h);
-          ctx.closePath();
-          ctx.stroke();
+          if (planetKey === 'earth') {
+            // EARTH: Saw blade — circular with teeth
+            const r = obs.w * 0.6;
+            const cy = obs.y + obs.h - r;
+            const teeth = 8;
+            ctx.fillStyle = '#888899';
+            ctx.beginPath();
+            for (let i = 0; i < teeth * 2; i++) {
+              const ang = (i / (teeth * 2)) * Math.PI * 2 + (Date.now() / 300); // rotating
+              const tr = i % 2 === 0 ? r : r * 0.7;
+              const tx = ocx + Math.cos(ang) * tr;
+              const ty = cy + Math.sin(ang) * tr;
+              i === 0 ? ctx.moveTo(tx, ty) : ctx.lineTo(tx, ty);
+            }
+            ctx.closePath();
+            ctx.fill();
+            // Center hole
+            ctx.fillStyle = '#444455';
+            ctx.beginPath();
+            ctx.arc(ocx, cy, r * 0.2, 0, Math.PI * 2);
+            ctx.fill();
+            // Metallic shine
+            ctx.fillStyle = '#aaaabb';
+            ctx.beginPath();
+            ctx.arc(ocx - 2, cy - 2, r * 0.15, 0, Math.PI * 2);
+            ctx.fill();
+          } else if (planetKey === 'mars') {
+            // MARS: Rock spike / crystal formation
+            ctx.fillStyle = '#8b3a1a';
+            ctx.beginPath();
+            ctx.moveTo(ocx, obs.y);
+            ctx.lineTo(ox - 2, oby);
+            ctx.lineTo(ox + obs.w + 2, oby);
+            ctx.closePath();
+            ctx.fill();
+            // Crystal facets
+            ctx.fillStyle = '#a54a2a';
+            ctx.beginPath();
+            ctx.moveTo(ocx, obs.y);
+            ctx.lineTo(ocx + 2, oby);
+            ctx.lineTo(ox - 2, oby);
+            ctx.closePath();
+            ctx.fill();
+            // Sharp tip
+            ctx.fillStyle = '#cc6644';
+            ctx.fillRect(ocx - 1, obs.y, 2, 4);
+            // Base rocks
+            ctx.fillStyle = '#663322';
+            ctx.fillRect(ox - 3, oby - 4, obs.w + 6, 4);
+          } else {
+            // MERCURY: Energy blade — vertical laser beam
+            const gradient = ctx.createLinearGradient(ox, obs.y, ox + obs.w, obs.y);
+            gradient.addColorStop(0, 'rgba(255,200,50,0.3)');
+            gradient.addColorStop(0.5, 'rgba(255,200,50,0.9)');
+            gradient.addColorStop(1, 'rgba(255,200,50,0.3)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(ox + 4, obs.y, obs.w - 8, obs.h);
+            // Core beam
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(ocx - 1, obs.y, 3, obs.h);
+            // Emitter base
+            ctx.fillStyle = '#555566';
+            ctx.fillRect(ox, oby - 3, obs.w, 4);
+            ctx.fillStyle = '#777788';
+            ctx.fillRect(ox + 2, oby - 3, obs.w - 4, 1);
+          }
           ctx.restore();
         } else {
-          // Block obstacle — SMW-style question/crate block
+          // BLOCK obstacles — planet specific
           ctx.save();
-          ctx.shadowColor = '#ff6b35';
-          ctx.shadowBlur = 6;
-          // Shadow
-          ctx.fillStyle = 'rgba(0,0,0,0.4)';
-          ctx.fillRect(ox + 3, obs.y + 3, obs.w, obs.h);
-          // Main body
-          ctx.fillStyle = '#3a2208';
-          ctx.fillRect(ox, obs.y, obs.w, obs.h);
-          // Top highlight
-          ctx.fillStyle = '#5a3a18';
-          ctx.fillRect(ox, obs.y, obs.w, 3);
-          // Left highlight
-          ctx.fillStyle = '#4a2a10';
-          ctx.fillRect(ox, obs.y, 3, obs.h);
-          // Right shadow
-          ctx.fillStyle = '#2a1608';
-          ctx.fillRect(ox + obs.w - 3, obs.y, 3, obs.h);
-          // Bottom shadow
-          ctx.fillStyle = '#1a0c04';
-          ctx.fillRect(ox, obs.y + obs.h - 3, obs.w, 3);
-          // Inner border
-          ctx.strokeStyle = '#ff6b35';
-          ctx.lineWidth = 1;
-          ctx.strokeRect(ox + 3, obs.y + 3, obs.w - 6, obs.h - 6);
-          // Warning symbol — diagonal hazard stripes
-          ctx.fillStyle = 'rgba(255,107,53,0.2)';
-          for (let si = -obs.h; si < obs.w + obs.h; si += 8) {
-            ctx.save();
-            ctx.beginPath();
-            ctx.moveTo(ox + si, obs.y + obs.h);
-            ctx.lineTo(ox + si + obs.h, obs.y);
-            ctx.lineTo(ox + si + obs.h + 4, obs.y);
-            ctx.lineTo(ox + si + 4, obs.y + obs.h);
-            ctx.closePath();
-            ctx.clip();
+          if (planetKey === 'earth') {
+            // Concrete barrier
+            ctx.fillStyle = '#555566';
             ctx.fillRect(ox, obs.y, obs.w, obs.h);
-            ctx.restore();
+            ctx.fillStyle = '#666677';
+            ctx.fillRect(ox, obs.y, obs.w, 3);
+            ctx.fillStyle = '#444455';
+            ctx.fillRect(ox, obs.y + obs.h - 3, obs.w, 3);
+            // Hazard stripes
+            ctx.fillStyle = '#ffd700';
+            ctx.fillRect(ox, obs.y, obs.w, 2);
+            ctx.fillRect(ox, obs.y + obs.h - 2, obs.w, 2);
+          } else if (planetKey === 'mars') {
+            // Martian boulder
+            ctx.fillStyle = '#6b2a0a';
+            ctx.beginPath();
+            ctx.ellipse(ocx, obs.y + obs.h / 2, obs.w / 2, obs.h / 2, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#8b3a1a';
+            ctx.beginPath();
+            ctx.ellipse(ocx - 3, obs.y + obs.h / 2 - 3, obs.w / 3, obs.h / 3, 0, 0, Math.PI * 2);
+            ctx.fill();
+          } else {
+            // Mercury: metal crate with heat shimmer
+            ctx.fillStyle = '#444455';
+            ctx.fillRect(ox, obs.y, obs.w, obs.h);
+            ctx.strokeStyle = '#666677';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(ox + 2, obs.y + 2, obs.w - 4, obs.h - 4);
+            // X mark
+            ctx.strokeStyle = '#ff6b35';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(ox + 4, obs.y + 4);
+            ctx.lineTo(ox + obs.w - 4, obs.y + obs.h - 4);
+            ctx.moveTo(ox + obs.w - 4, obs.y + 4);
+            ctx.lineTo(ox + 4, obs.y + obs.h - 4);
+            ctx.stroke();
           }
-          // Top cap glow
-          ctx.fillStyle = '#ff6b35';
-          ctx.fillRect(ox + 2, obs.y, obs.w - 4, 2);
           ctx.restore();
         }
       }

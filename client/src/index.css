@@ -55,83 +55,71 @@
 @layer components {
   /* ── Buttons ─────────────────────────────────── */
   .pixel-btn {
-    @apply px-6 py-3 text-xs font-pixel uppercase tracking-wider
-           border-2 cursor-pointer transition-all duration-100
+    @apply px-6 py-3 text-sm font-retro font-semibold uppercase tracking-wider
+           border cursor-pointer transition-all duration-150 rounded-md
            relative overflow-hidden select-none;
-    box-shadow: 4px 4px 0 rgba(0,0,0,0.6);
   }
-  .pixel-btn:hover  { transform: translateY(-2px); box-shadow: 6px 6px 0 rgba(0,0,0,0.6); }
-  .pixel-btn:active { transform: translateY(1px);  box-shadow: 2px 2px 0 rgba(0,0,0,0.6); }
-  .pixel-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+  .pixel-btn:hover  { transform: translateY(-1px); filter: brightness(1.15); }
+  .pixel-btn:active { transform: translateY(1px); }
+  .pixel-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 
   .btn-cyan {
-    @apply pixel-btn border-retro-cyan text-retro-cyan bg-retro-cyan/10;
-    text-shadow: 0 0 8px #00d4ff;
+    @apply pixel-btn border-retro-cyan/50 text-retro-cyan bg-retro-cyan/10;
   }
-  .btn-cyan:hover { @apply bg-retro-cyan/20; box-shadow: 6px 6px 0 rgba(0,0,0,0.6), 0 0 16px rgba(0,212,255,0.3); }
+  .btn-cyan:hover { @apply bg-retro-cyan/20; }
 
   .btn-pink {
-    @apply pixel-btn border-retro-pink bg-retro-pink text-white;
+    @apply pixel-btn border-retro-pink/50 bg-retro-pink text-white;
   }
-  .btn-pink:hover { box-shadow: 6px 6px 0 rgba(0,0,0,0.6), 0 0 16px rgba(255,51,102,0.4); }
 
   .btn-green {
-    @apply pixel-btn border-retro-green bg-retro-green text-black;
+    @apply pixel-btn border-retro-green/50 bg-retro-green text-black;
   }
-  .btn-green:hover { box-shadow: 6px 6px 0 rgba(0,0,0,0.6), 0 0 16px rgba(57,255,20,0.4); }
 
   .btn-gold {
-    @apply pixel-btn border-retro-yellow bg-retro-yellow text-black;
+    @apply pixel-btn border-retro-yellow/50 bg-retro-yellow text-black;
   }
-  .btn-gold:hover { box-shadow: 6px 6px 0 rgba(0,0,0,0.6), 0 0 16px rgba(255,215,0,0.4); }
 
   .btn-ghost {
-    @apply pixel-btn border-retro-border text-retro-white/60 bg-transparent;
+    @apply pixel-btn border-white/20 text-retro-white/50 bg-transparent;
   }
-  .btn-ghost:hover { @apply border-retro-white/40 text-retro-white; }
+  .btn-ghost:hover { @apply border-white/40 text-retro-white; }
 
-  /* Legacy alias used by existing code */
-  .pixel-btn.bg-retro-pink  { border-color: #ff3366; color: #fff; }
-  .pixel-btn.bg-retro-green { border-color: #39ff14; color: #000; }
 
-  /* ── Cards ───────────────────────────────────── */
+  /* ── Cards (modern glass) ─────────────────────── */
   .pixel-card {
-    @apply p-4 border border-retro-border;
-    background: rgba(13,13,42,0.88);
-    backdrop-filter: blur(6px);
-    box-shadow: 4px 4px 0 rgba(0,0,0,0.4);
+    @apply p-5 border border-white/10 rounded-lg;
+    background: rgba(15,15,35,0.85);
+    backdrop-filter: blur(12px);
   }
 
   .card-glow-cyan {
     @apply pixel-card;
-    border-color: rgba(0,212,255,0.35);
-    box-shadow: 4px 4px 0 rgba(0,0,0,0.4), 0 0 20px rgba(0,212,255,0.08);
+    border-color: rgba(0,212,255,0.2);
   }
 
   .card-glow-pink {
     @apply pixel-card;
-    border-color: rgba(255,51,102,0.35);
-    box-shadow: 4px 4px 0 rgba(0,0,0,0.4), 0 0 20px rgba(255,51,102,0.08);
+    border-color: rgba(255,51,102,0.2);
   }
 
-  /* ── Text glow helpers ───────────────────────── */
-  .glow-text         { text-shadow: 0 0 10px currentColor, 0 0 22px currentColor; }
-  .glow-text-cyan    { text-shadow: 0 0 10px #00d4ff, 0 0 30px rgba(0,212,255,0.5); }
-  .glow-text-gold    { text-shadow: 0 0 10px #ffd700, 0 0 30px rgba(255,215,0,0.5); }
-  .glow-text-pink    { text-shadow: 0 0 10px #ff3366, 0 0 30px rgba(255,51,102,0.5); }
-  .glow-text-green   { text-shadow: 0 0 10px #39ff14, 0 0 30px rgba(57,255,20,0.5); }
+  /* ── Text glow helpers (subtle, not neon) ────── */
+  .glow-text         { text-shadow: 0 0 6px currentColor; }
+  .glow-text-cyan    { text-shadow: 0 0 8px rgba(0,212,255,0.4); }
+  .glow-text-gold    { text-shadow: 0 0 8px rgba(255,215,0,0.4); }
+  .glow-text-pink    { text-shadow: 0 0 8px rgba(255,51,102,0.4); }
+  .glow-text-green   { text-shadow: 0 0 8px rgba(57,255,20,0.4); }
 
   /* ── Inputs ──────────────────────────────────── */
   .pixel-input {
-    @apply w-full bg-retro-panel border border-retro-border px-4 py-3
-           font-pixel text-sm text-retro-white outline-none transition-colors;
-    box-shadow: inset 2px 2px 0 rgba(0,0,0,0.4);
+    @apply w-full bg-white/5 border border-white/15 px-4 py-3 rounded-md
+           font-retro text-base text-retro-white outline-none transition-all;
   }
   .pixel-input:focus {
-    border-color: #00d4ff;
-    box-shadow: inset 2px 2px 0 rgba(0,0,0,0.4), 0 0 0 1px rgba(0,212,255,0.3);
+    border-color: rgba(0,212,255,0.5);
+    background: rgba(255,255,255,0.08);
   }
-  .pixel-input::placeholder { color: rgba(232,232,255,0.25); }
+  .pixel-input::placeholder { color: rgba(232,232,255,0.3); }
 
   /* ── Scanlines ───────────────────────────────── */
   .scanline-overlay {
@@ -158,20 +146,18 @@
 
   /* ── Stat / progress bars ────────────────────── */
   .stat-bar {
-    @apply h-3 border border-white/15 relative overflow-hidden;
-    background: rgba(0,0,0,0.5);
-    box-shadow: inset 1px 1px 0 rgba(0,0,0,0.5);
+    @apply h-3 rounded-full relative overflow-hidden;
+    background: rgba(255,255,255,0.08);
   }
   .stat-bar-fill {
-    @apply h-full transition-all duration-300;
-    box-shadow: 2px 0 8px currentColor;
+    @apply h-full transition-all duration-300 rounded-full;
   }
 
-  /* ── Neon border helpers ─────────────────────── */
-  .border-neon-cyan  { border-color: #00d4ff; box-shadow: 0 0 8px rgba(0,212,255,0.35), inset 0 0 8px rgba(0,212,255,0.06); }
-  .border-neon-pink  { border-color: #ff3366; box-shadow: 0 0 8px rgba(255,51,102,0.35); }
-  .border-neon-gold  { border-color: #ffd700; box-shadow: 0 0 8px rgba(255,215,0,0.35); }
-  .border-neon-green { border-color: #39ff14; box-shadow: 0 0 8px rgba(57,255,20,0.35); }
+  /* ── Border helpers (subtle) ─────────────────── */
+  .border-neon-cyan  { border-color: rgba(0,212,255,0.4); }
+  .border-neon-pink  { border-color: rgba(255,51,102,0.4); }
+  .border-neon-gold  { border-color: rgba(255,215,0,0.4); }
+  .border-neon-green { border-color: rgba(57,255,20,0.4); }
 
   /* ── Stars ───────────────────────────────────── */
   .star {
@@ -197,17 +183,16 @@
 
   /* ── Section divider ─────────────────────────── */
   .section-title {
-    @apply font-retro text-xl text-retro-cyan glow-text-cyan mb-1;
-    letter-spacing: 0.1em;
+    @apply font-pixel text-sm text-retro-cyan mb-1 uppercase tracking-wide;
   }
   .section-subtitle {
-    @apply font-retro text-lg text-retro-white/50 mb-4;
+    @apply font-retro text-sm text-retro-white/50 mb-4;
   }
 
   /* ── Avatar badge ────────────────────────────── */
   .avatar-badge {
-    @apply w-10 h-10 flex items-center justify-center font-retro text-lg
-           border-2 transition-all duration-100 cursor-pointer select-none;
+    @apply w-10 h-10 flex items-center justify-center font-retro text-sm font-bold
+           border rounded-md transition-all duration-150 cursor-pointer select-none;
   }
 
   /* ── Retro hero gradient ─────────────────────── */
