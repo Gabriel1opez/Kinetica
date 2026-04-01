@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 const MUSCLES = [
   {
@@ -110,6 +110,113 @@ export default function Configuration({ socket }: Props) {
     { label: 'STAMINA',val: 35 + (muscles.core ? 40 : 0) + (energy.aerobic > 50 ? 25 : 0) },
   ];
 
+  // Character preview canvas
+  const previewRef = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const canvas = previewRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d')!;
+    const W = canvas.width, H = canvas.height;
+
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = 'rgba(5,5,20,0.6)';
+    ctx.fillRect(0, 0, W, H);
+
+    const muscleCount = selectedCount;
+    const pColor = muscleCount >= 3 ? '#ff3366' : muscleCount >= 2 ? '#ffd700' : '#00d4ff';
+    const pDark = muscleCount >= 3 ? '#aa1144' : muscleCount >= 2 ? '#aa8800' : '#0088aa';
+    const scale = 3;
+    const cx = W / 2, by = H / 2 + 20;
+
+    const px = (x: number, y: number, w: number, h: number, c: string) => {
+      ctx.fillStyle = c;
+      ctx.fillRect(x, y, w * scale, h * scale);
+    };
+
+    // Mass affects body width
+    const massW = Math.round((mass - 50) / 70 * 3); // 0-3 extra pixels width
+
+    // Head
+    px(cx - 5*scale, by - 24*scale, 10 + massW, 10, '#ffcc99');
+    // Hair
+    px(cx - 6*scale, by - 25*scale, 12 + massW, 4, muscles.upperBody ? '#663399' : '#333366');
+    // Eyes
+    px(cx - 3*scale, by - 20*scale, 2, 2, '#ffffff');
+    px(cx + 1*scale, by - 20*scale, 2, 2, '#ffffff');
+    px(cx - 2*scale, by - 19*scale, 1, 1, '#222244');
+    px(cx + 2*scale, by - 19*scale, 1, 1, '#222244');
+
+    // Body — wider with more mass
+    const bodyW = 12 + massW * 2;
+    px(cx - (bodyW/2)*scale, by - 13*scale, bodyW, 13, pColor);
+    // Belt
+    px(cx - (bodyW/2)*scale, by - 2*scale, bodyW, 2, pDark);
+
+    // Arms — thicker with upper body
+    const armW = muscles.upperBody ? 5 : 3;
+    px(cx - (bodyW/2 + armW)*scale, by - 12*scale, armW, 10, pColor);
+    px(cx + (bodyW/2)*scale, by - 12*scale, armW, 10, pColor);
+    // Hands
+    px(cx - (bodyW/2 + armW)*scale, by - 3*scale, armW, 3, '#ffcc99');
+    px(cx + (bodyW/2)*scale, by - 3*scale, armW, 3, '#ffcc99');
+
+    // Legs — thicker with quads/hams/calves
+    const legThick = 4 + (muscles.quadriceps ? 1 : 0) + (muscles.hamstrings ? 1 : 0);
+    px(cx - 5*scale, by, legThick, 10, pDark);
+    px(cx + 1*scale, by, legThick, 10, pDark);
+    // Calves highlight
+    if (muscles.calves) {
+      px(cx - 4*scale, by + 6*scale, legThick - 1, 3, '#39ff14' + '44');
+    }
+
+    // Boots
+    px(cx - 6*scale, by + 9*scale, legThick + 1, 3, '#443366');
+    px(cx, by + 9*scale, legThick + 1, 3, '#443366');
+
+    // Core glow indicator
+    if (muscles.core) {
+      ctx.save();
+      ctx.shadowColor = '#00d4ff';
+      ctx.shadowBlur = 10;
+      ctx.fillStyle = '#00d4ff22';
+      ctx.fillRect(cx - (bodyW/2 - 1)*scale, by - 8*scale, (bodyW - 2)*scale, 5*scale);
+      ctx.restore();
+    }
+
+    // Energy system visual indicators (colored aura)
+    const dominant = energy.atpPc >= energy.anaerobic && energy.atpPc >= energy.aerobic ? '#ff3366'
+      : energy.anaerobic >= energy.aerobic ? '#ff6b35' : '#39ff14';
+    ctx.save();
+    ctx.shadowColor = dominant;
+    ctx.shadowBlur = 15;
+    ctx.strokeStyle = dominant + '66';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(cx - (bodyW/2 + armW + 4)*scale, by - 28*scale, (bodyW + armW*2 + 8)*scale, 42*scale);
+    ctx.restore();
+
+    // Mass label
+    ctx.fillStyle = '#00d4ff';
+    ctx.font = '10px "Press Start 2P"';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${mass}kg`, cx, by + 16*scale);
+
+    // Stat labels
+    const statLabels = [];
+    if (muscles.quadriceps) statLabels.push({ text: 'SPEED+', color: '#ff3366' });
+    if (muscles.hamstrings) statLabels.push({ text: 'ACCEL+', color: '#ffd700' });
+    if (muscles.calves) statLabels.push({ text: 'JUMP+', color: '#39ff14' });
+    if (muscles.core) statLabels.push({ text: 'STAM+', color: '#00d4ff' });
+    if (muscles.upperBody) statLabels.push({ text: 'SWIM+', color: '#cc88ff' });
+
+    statLabels.forEach((sl, i) => {
+      ctx.fillStyle = sl.color;
+      ctx.font = '8px "Press Start 2P"';
+      ctx.textAlign = 'center';
+      ctx.fillText(sl.text, cx, by - 30*scale - i * 14);
+    });
+
+  }, [muscles, energy, mass, selectedCount]);
+
   return (
     <div className="min-h-screen px-4 py-8 max-w-4xl mx-auto animate-fade-in">
       {/* Header */}
@@ -214,10 +321,20 @@ export default function Configuration({ socket }: Props) {
         </div>
       </div>
 
-      {/* Preview stats */}
+      {/* Character Preview + Stats */}
       <div className="pixel-card mb-8">
-        <p className="font-pixel text-sm text-retro-cyan mb-3">PERFORMANCE PREVIEW</p>
-        <div className="grid grid-cols-4 gap-3">
+        <p className="font-pixel text-sm text-retro-cyan mb-3">YOUR ATHLETE</p>
+        <div className="flex gap-6 items-start mb-4">
+          {/* Live character preview */}
+          <div className="flex-shrink-0">
+            <canvas ref={previewRef} width={200} height={260}
+              className="border border-retro-border"
+              style={{ imageRendering: 'pixelated' }} />
+          </div>
+          {/* Performance bars */}
+          <div className="flex-1">
+            <p className="font-retro text-lg text-retro-white/60 mb-3">PERFORMANCE STATS</p>
+            <div className="grid grid-cols-2 gap-3">
           {stats.map(stat => {
             const pct   = Math.min(stat.val, 100);
             const color = pct > 70 ? '#39ff14' : pct > 50 ? '#ffd700' : '#ff073a';
@@ -232,6 +349,8 @@ export default function Configuration({ socket }: Props) {
               </div>
             );
           })}
+            </div>
+          </div>
         </div>
       </div>
 

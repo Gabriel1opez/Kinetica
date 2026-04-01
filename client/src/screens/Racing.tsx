@@ -330,6 +330,7 @@ export default function Racing({ socket }: Props) {
     potionBoostSpeed: 1,         // active multiplier
     potionBoostJump: 1,          // active multiplier
     potionFlash: 0,              // visual flash timer
+    finishSent: false,           // guard against double race:finish
     wasInAir: false,  // track landing for dust effect
     // particles
     particles: [] as { x: number; y: number; vx: number; vy: number; life: number; color: string; size: number }[],
@@ -617,6 +618,7 @@ export default function Racing({ socket }: Props) {
     pRef.current.potionBoostSpeed = 1;
     pRef.current.potionBoostJump = 1;
     pRef.current.potionFlash = 0;
+    pRef.current.finishSent = false;
     pRef.current.stamina = physics.startStamina;
     pRef.current.hits = 0;
     pRef.current.elapsed = 0;
@@ -718,12 +720,13 @@ export default function Racing({ socket }: Props) {
 
       // Dead check — if HP is 0, record 2 min time
       if (p.dead) return;
-      if (p.health <= 0 && !p.dead) {
+      if (p.health <= 0 && !p.dead && !p.finishSent) {
         p.dead = true;
+        p.finishSent = true;
         p.state = 'die';
         statusRef.current = 'complete';
         setGameStatus('complete');
-        socket.finishRace(120); // 2 minute penalty
+        socket.finishRace(120);
         return;
       }
 
@@ -925,14 +928,16 @@ export default function Racing({ socket }: Props) {
       p.elapsed = (performance.now() - p.startTime) / 1000;
 
       // ── Check finish ──────────────────────────────────────────────────────
-      if (p.worldX >= level.finishX && statusRef.current === 'playing') {
+      if (p.worldX >= level.finishX && statusRef.current === 'playing' && !p.finishSent) {
+        p.finishSent = true;
         statusRef.current = 'complete';
         setGameStatus('complete');
         socket.finishRace(p.elapsed);
       }
 
       // ── 2-minute timeout ──────────────────────────────────────────────────
-      if (p.elapsed >= 120 && statusRef.current === 'playing') {
+      if (p.elapsed >= 120 && statusRef.current === 'playing' && !p.finishSent) {
+        p.finishSent = true;
         statusRef.current = 'complete';
         setGameStatus('complete');
         socket.finishRace(120);
