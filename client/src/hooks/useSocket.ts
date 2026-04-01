@@ -29,9 +29,10 @@ export function useSocket() {
   const [raceResult, setRaceResult] = useState<any>(null);
 
   useEffect(() => {
-    const socket = io(window.location.hostname === 'localhost'
-      ? 'http://localhost:3001'
-      : window.location.origin, {
+    const serverUrl = import.meta.env.VITE_SERVER_URL ||
+      (window.location.hostname === 'localhost' ? 'http://localhost:3001' : window.location.origin);
+
+    const socket = io(serverUrl, {
       transports: ['websocket', 'polling'],
     });
 
