@@ -626,6 +626,7 @@ export default function Racing({ socket }: Props) {
       const wRight = keys.has('ArrowRight') || keys.has('KeyD');
       const wLeft  = keys.has('ArrowLeft')  || keys.has('KeyA');
       const wJump  = jumpRef.current;
+      const jumpKeyHeld = keys.has('ArrowUp') || keys.has('Space') || keys.has('KeyW');
 
       // Section-based science effects
       const section = getCurrentSection(p.worldX, level);
@@ -696,8 +697,12 @@ export default function Racing({ socket }: Props) {
         p.stamina = Math.max(0, p.stamina - 12);
         jumpRef.current = false;
       }
-      if (!wJump) {
+      // Only allow re-jumping after: key released AND back on ground
+      if (!jumpKeyHeld && p.onGround) {
         p.alreadyJumped = false;
+      }
+      // Clear the one-shot jump flag after processing
+      if (!jumpKeyHeld) {
         jumpRef.current = false;
       }
 
