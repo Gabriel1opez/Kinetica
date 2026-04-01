@@ -309,35 +309,138 @@ export default function Racing({ socket }: Props) {
     explosions: [] as { x: number; y: number; frame: number; timer: number }[],
   });
 
-  // ── Sprite preload ────────────────────────────────────────────────────────
+  // ── Programmatic sprite generation ───���─────────────────────────────────────
   useEffect(() => {
-    const load = (src: string): Promise<HTMLImageElement> =>
-      new Promise(res => { const img = new Image(); img.onload = () => res(img); img.src = src; });
+    const base = import.meta.env.BASE_URL || './';
 
-    Promise.all([
-      Promise.all([1,2,3,4].map(i => load(`/sprites/player/idle/idle${i}.png`))),
-      Promise.all([1,2,3,4,5,6,7,8,9,10].map(i => load(`/sprites/player/run/run${i}.png`))),
-      Promise.all([1,2,3,4,5,6].map(i => load(`/sprites/player/jump/jump-no-gun${i}.png`))),
-      Promise.all([1,2,3].map(i => load(`/sprites/player/die/die${i}.png`))),
-      load('/bg/bg.png').catch(() => null),
-      load('/bg/far-buildings.png').catch(() => null),
-      load('/bg/buildings.png').catch(() => null),
-      load('/bg/skill-foreground.png').catch(() => null),
-      Promise.all([1,2,3,4,5,6,7,8,9].map(i =>
-        load(`/sprites/explosion/explosion-animation${i}.png`).catch(() => null as any)
-      )),
-    ]).then(([idle, run, jump, die, bg, farB, bldg, fg, expl]) => {
+    // Generate pixel-art character frames on offscreen canvases
+    function makeFrame(w: number, h: number, draw: (ctx: CanvasRenderingContext2D) => void): HTMLImageElement {
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      const cx = c.getContext('2d')!;
+      draw(cx);
+      const img = new Image();
+      img.src = c.toDataURL();
+      return img;
+    }
+
+    const pColor = '#00d4ff';
+    const pDark  = '#0088aa';
+    const pSkin  = '#ffcc99';
+    const pHair  = '#333366';
+
+    // Draw a pixel character at given pose
+    function drawChar(ctx: CanvasRenderingContext2D, legOffset: number, armOffset: number, squish = 0) {
+      const cx = 37, by = 46;
+      // Head
+      ctx.fillStyle = pSkin;
+      ctx.fillRect(cx - 5, by - 22 - squish, 10, 10);
+      // Hair
+      ctx.fillStyle = pHair;
+      ctx.fillRect(cx - 6, by - 23 - squish, 12, 4);
+      // Eyes
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(cx - 3, by - 18 - squish, 3, 3);
+      ctx.fillRect(cx + 1, by - 18 - squish, 3, 3);
+      ctx.fillStyle = '#222244';
+      ctx.fillRect(cx - 2, by - 17 - squish, 2, 2);
+      ctx.fillRect(cx + 2, by - 17 - squish, 2, 2);
+      // Body
+      ctx.fillStyle = pColor;
+      ctx.fillRect(cx - 6, by - 12, 12, 12);
+      // Belt
+      ctx.fillStyle = pDark;
+      ctx.fillRect(cx - 6, by - 2, 12, 2);
+      // Arms
+      ctx.fillStyle = pColor;
+      ctx.fillRect(cx - 10, by - 11 + armOffset, 4, 8);
+      ctx.fillRect(cx + 6, by - 11 - armOffset, 4, 8);
+      // Hands
+      ctx.fillStyle = pSkin;
+      ctx.fillRect(cx - 10, by - 4 + armOffset, 4, 3);
+      ctx.fillRect(cx + 6, by - 4 - armOffset, 4, 3);
+      // Legs
+      ctx.fillStyle = pDark;
+      ctx.fillRect(cx - 5, by, 4, 8 + legOffset);
+      ctx.fillRect(cx + 1, by, 4, 8 - legOffset);
+      // Boots
+      ctx.fillStyle = '#443366';
+      ctx.fillRect(cx - 6, by + 7 + legOffset, 5, 3);
+      ctx.fillRect(cx, by + 7 - legOffset, 5, 3);
+    }
+
+    // Idle frames (subtle breathing)
+    const idle = [0, -1, -1, 0].map((s, i) =>
+      makeFrame(75, 48, ctx => drawChar(ctx, 0, i < 2 ? 0 : 1, s))
+    );
+
+    // Run frames (leg + arm pump)
+    const run = [-3, -1, 1, 3, 3, 1, -1, -3, -2, 0].map((leg, i) =>
+      makeFrame(75, 48, ctx => drawChar(ctx, leg, Math.floor(i / 2) % 2 === 0 ? 3 : -2))
+    );
+
+    // Jump frames
+    const jump = [0, -2, -3, -3, -2, 0].map(s =>
+      makeFrame(75, 48, ctx => {
+        drawChar(ctx, -2, 4, s);
+      })
+    );
+
+    // Die frames
+    const die = [0, 1, 2].map(i =>
+      makeFrame(75, 48, ctx => {
+        ctx.globalAlpha = 1 - i * 0.3;
+        drawChar(ctx, 0, 0);
+      })
+    );
+
+    // Explosion frames (expanding circles)
+    const expl = Array.from({ length: 9 }, (_, i) =>
+      makeFrame(48, 48, ctx => {
+        const r = (i + 1) * 3;
+        ctx.globalAlpha = 1 - i / 9;
+        ctx.fillStyle = i < 4 ? '#ffd700' : '#ff6b35';
+        ctx.beginPath();
+        ctx.arc(24, 24, r, 0, Math.PI * 2);
+        ctx.fill();
+        if (i > 2) {
+          ctx.fillStyle = '#ff3366';
+          ctx.beginPath();
+          ctx.arc(24, 24, r * 0.6, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      })
+    );
+
+    // Load background images from our assets
+    const load = (src: string): Promise<HTMLImageElement | null> =>
+      new Promise(res => {
+        const img = new Image();
+        img.onload = () => res(img);
+        img.onerror = () => res(null);
+        img.src = src;
+      });
+
+    const bgMap: Record<string, string[]> = {
+      earth:   ['earth-sky.png', 'city-back.png', 'city-buildings.png', 'city-front.png'],
+      mars:    ['mars-bg.png', 'mars-lava.png', 'mars-tileset.png', 'mars-tileset.png'],
+      mercury: ['mercury-bg.png', 'mercury-stars.png', 'mercury-bg.png', 'mercury-stars.png'],
+    };
+
+    const bgFiles = bgMap[planetKey] || bgMap.earth;
+
+    Promise.all(bgFiles.map(f => load(`${base}assets/environments/${f}`))).then(([bg, farB, bldg, fg]) => {
       sprites.current = {
         idle, run, jump, die,
-        bg:   bg   as HTMLImageElement | null,
-        farB: farB as HTMLImageElement | null,
-        bldg: bldg as HTMLImageElement | null,
-        fg:   fg   as HTMLImageElement | null,
-        expl: expl.filter(Boolean) as HTMLImageElement[],
+        bg:   bg,
+        farB: farB,
+        bldg: bldg,
+        fg:   fg,
+        expl,
       };
       setSpritesReady(true);
     });
-  }, []);
+  }, [planetKey]);
 
   // ── Keyboard / Touch input ────────────────────────────────────────────────
   useEffect(() => {

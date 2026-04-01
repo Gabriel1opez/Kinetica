@@ -25,6 +25,7 @@ export default function App() {
     <div className="min-h-screen relative overflow-hidden">
       <StarField />
       <div className="scanline-overlay" />
+      <div className="crt-vignette" />
 
       <div className="relative z-10">
         {screen === 'menu' ? (

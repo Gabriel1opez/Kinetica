@@ -10,7 +10,7 @@ const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: [
+    origin: process.env.CORS_ORIGIN?.split(',') || [
       'http://localhost:5173',
       'http://localhost:3000',
       'https://gabriel1opez.github.io',
