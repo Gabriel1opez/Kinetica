@@ -91,11 +91,11 @@ const LEVELS: Record<string, Level> = {
     ],
     finishX: 3500,
     sectionTags: [
-      { x: 80,   label: 'A: LAUNCH ZONE',    color: '#ff3366' },
-      { x: 500,  label: 'B: SPRINT TERRAIN',  color: '#ffd700' },
-      { x: 1200, label: 'C: WATER SECTION',   color: '#00d4ff' },
-      { x: 2000, label: 'D: JUMP HURDLES',    color: '#39ff14' },
-      { x: 2800, label: 'E: FATIGUE SPRINT',  color: '#ff6b35' },
+      { x: 80,   label: 'LAUNCH',     color: '#ff3366' },
+      { x: 600,  label: 'SPRINT',     color: '#ffd700' },
+      { x: 1400, label: 'HURDLES',    color: '#39ff14' },
+      { x: 2200, label: 'OBSTACLES',  color: '#ff6b35' },
+      { x: 3000, label: 'FINAL PUSH', color: '#00d4ff' },
     ],
   },
 
@@ -134,11 +134,11 @@ const LEVELS: Record<string, Level> = {
     ],
     finishX: 3500,
     sectionTags: [
-      { x: 80,   label: 'A: LAUNCH ZONE',     color: '#ff6b35' },
-      { x: 500,  label: 'B: LOW-G LEAPS',     color: '#ffd700' },
-      { x: 1200, label: 'C: DUST SPRINT',      color: '#ff3366' },
-      { x: 2000, label: 'D: OBSTACLE RIDGE',   color: '#ff073a' },
-      { x: 2700, label: 'E: FLOAT SPRINT',     color: '#ffd700' },
+      { x: 80,   label: 'LAUNCH',     color: '#ff6b35' },
+      { x: 600,  label: 'LOW-G RUN',  color: '#ffd700' },
+      { x: 1400, label: 'LEAPS',      color: '#ff3366' },
+      { x: 2200, label: 'RIDGE',      color: '#ff073a' },
+      { x: 2800, label: 'FLOAT',      color: '#ffd700' },
     ],
   },
 
@@ -188,11 +188,11 @@ const LEVELS: Record<string, Level> = {
     ],
     finishX: 3500,
     sectionTags: [
-      { x: 50,   label: 'A: LAUNCH ZONE',    color: '#ff6b35' },
-      { x: 500,  label: 'B: HEAT SPRINT',     color: '#ff3366' },
-      { x: 1100, label: 'C: HEATED PLATES',   color: '#ff073a' },
-      { x: 1800, label: 'D: O₂ STRESS ZONE', color: '#ffd700' },
-      { x: 2500, label: 'E: COLLAPSE SPRINT', color: '#ff073a' },
+      { x: 50,   label: 'LAUNCH',     color: '#ff6b35' },
+      { x: 500,  label: 'HEAT RUN',   color: '#ff3366' },
+      { x: 1200, label: 'LAVA ZONE',  color: '#ff073a' },
+      { x: 2000, label: 'GAUNTLET',   color: '#ffd700' },
+      { x: 2800, label: 'COLLAPSE',   color: '#ff073a' },
     ],
   },
 };
@@ -286,8 +286,9 @@ export default function Racing({ socket }: Props) {
   const rafRef      = useRef<number>(0);
   const lastTRef    = useRef<number>(0);
   const statusRef   = useRef<'waiting'|'countdown'|'playing'|'complete'>('waiting');
-  const jumpRef     = useRef(false); // "jump was just pressed"
+  const jumpRef     = useRef(false);
   const keysRef     = useRef(new Set<string>());
+  const potionsRef  = useRef<any[]>(me?.config?.potions || []);
 
   const sprites = useRef<{
     idle: HTMLImageElement[];
@@ -528,21 +529,20 @@ export default function Racing({ socket }: Props) {
         img.src = src;
       });
 
-    const bgMap: Record<string, string[]> = {
-      earth:   ['earth-sky.png', 'city-back.png', 'city-buildings.png', 'city-front.png'],
-      mars:    ['mars-bg.png', 'mars-lava.png', 'mars-tileset.png', 'mars-tileset.png'],
-      mercury: ['mercury-bg.png', 'mercury-stars.png', 'mercury-bg.png', 'mercury-stars.png'],
+    // Single background per planet
+    const bgFile: Record<string, string> = {
+      earth:   'city-buildings.png',
+      mars:    'mars-bg.png',
+      mercury: 'mercury-bg.png',
     };
 
-    const bgFiles = bgMap[planetKey] || bgMap.earth;
-
-    Promise.all(bgFiles.map(f => load(`${base}assets/environments/${f}`))).then(([bg, farB, bldg, fg]) => {
+    load(`${base}assets/environments/${bgFile[planetKey] || bgFile.earth}`).then((bg) => {
       sprites.current = {
         idle, run, jump, die,
         bg:   bg,
-        farB: farB,
-        bldg: bldg,
-        fg:   fg,
+        farB: null,
+        bldg: null,
+        fg:   null,
         expl,
       };
       setSpritesReady(true);
@@ -561,15 +561,14 @@ export default function Racing({ socket }: Props) {
       if (!e.repeat && e.code === 'KeyE') {
         const p = pRef.current;
         if (!p.potionUsed && statusRef.current === 'playing') {
-          const potions = me?.config?.potions || [];
+          const potions = potionsRef.current;
           const planetIdx = { earth: 0, mars: 1, mercury: 2 }[planetKey] ?? 0;
-          if (potions[planetIdx]) {
+          const potion = potions[planetIdx] || potions[0]; // fallback to first potion
+          if (potion) {
             p.potionUsed = true;
             p.activePotionIndex = planetIdx;
             p.potionTimer = 480; // 8 seconds at 60fps
             p.potionFlash = 30;
-            // Apply boost based on potion type
-            const potion = potions[planetIdx];
             if (potion.stat === 'speed' || potion.stat === 'explosive_power') {
               p.potionBoostSpeed = 1.4;
             } else if (potion.stat === 'jump_power' || potion.stat === 'reaction_time') {
@@ -669,13 +668,7 @@ export default function Racing({ socket }: Props) {
       requestAnimationFrame(animLaunch);
     });
 
-    // Countdown 3-2-1
-    for (let i = 3; i >= 1; i--) {
-      setCountdownNum(i);
-      await new Promise(r => setTimeout(r, 700));
-    }
-
-    // GO!
+    // Start immediately after landing
     setGameStatus('playing');
     statusRef.current = 'playing';
     pRef.current.startTime = performance.now();
@@ -707,15 +700,10 @@ export default function Racing({ socket }: Props) {
       let sectionSpeedMod = 1;
       let sectionStaminaMod = 1;
 
-      // Water section: upper body muscles matter
-      if (section === 'C') {
-        const hasUpperBody = me?.config?.muscles?.upperBody;
-        sectionSpeedMod = hasUpperBody ? 0.85 : 0.55; // Upper body trained = less slowdown
-      }
-      // Fatigue/Heat sections: aerobic energy + potions matter
-      if (section === 'E' || section === 'D') {
+      // Later sections drain more stamina (fatigue accumulation)
+      if (section === 'D' || section === 'E') {
         const aerobic = me?.config?.energy?.aerobic || 33;
-        sectionStaminaMod = aerobic > 50 ? 0.7 : 1.3; // High aerobic = less fatigue drain
+        sectionStaminaMod = aerobic > 50 ? 0.8 : 1.4;
       }
 
       // Dead check — if HP is 0, record 2 min time
@@ -998,7 +986,7 @@ export default function Racing({ socket }: Props) {
         if (sx < -100 || sx > CW + 100) continue;
         ctx.save();
         ctx.fillStyle = tag.color + 'aa';
-        ctx.font = '7px "Press Start 2P"';
+        ctx.font = '7px "Silkscreen"';
         ctx.textAlign = 'center';
         ctx.fillText(tag.label, sx, GROUND_Y - 44);
         ctx.strokeStyle = tag.color + '33';
@@ -1242,7 +1230,7 @@ export default function Racing({ socket }: Props) {
         ctx.fillRect(fx - 6, GROUND_Y - 4, 12, 1);
         // "FINISH" text
         ctx.fillStyle = '#ffd700';
-        ctx.font = '8px "Press Start 2P"';
+        ctx.font = '8px "Silkscreen"';
         ctx.textAlign = 'center';
         ctx.fillText('FINISH', fx + 16, flagY - 6);
         ctx.restore();
@@ -1296,9 +1284,9 @@ export default function Racing({ socket }: Props) {
 
       // Potion HUD indicator
       if (statusRef.current === 'playing') {
-        const potions = me?.config?.potions || [];
+        const potions = potionsRef.current;
         const planetIdx = { earth: 0, mars: 1, mercury: 2 }[planetKey] ?? 0;
-        const availablePotion = potions[planetIdx];
+        const availablePotion = potions[planetIdx] || potions[0];
 
         if (p.potionTimer > 0 && p.activePotionIndex >= 0) {
           // Active potion — show glowing indicator
@@ -1308,7 +1296,7 @@ export default function Racing({ socket }: Props) {
           ctx.fillStyle = '#e91e8c';
           ctx.shadowColor = '#e91e8c';
           ctx.shadowBlur = 12;
-          ctx.font = '8px "Press Start 2P"';
+          ctx.font = '8px "Silkscreen"';
           ctx.textAlign = 'center';
           ctx.fillText(`${potionName.toUpperCase()} ${remaining}s`, CW / 2, 44);
           ctx.restore();
@@ -1318,14 +1306,14 @@ export default function Racing({ socket }: Props) {
           ctx.fillStyle = '#cc88ff';
           ctx.shadowColor = '#cc88ff';
           ctx.shadowBlur = 6;
-          ctx.font = '7px "Press Start 2P"';
+          ctx.font = '7px "Silkscreen"';
           ctx.textAlign = 'right';
           ctx.fillText(`[E] ${(availablePotion.name || 'POTION').toUpperCase()}`, CW - 14, 52);
           ctx.restore();
         } else if (p.potionUsed) {
           ctx.save();
           ctx.fillStyle = 'rgba(255,255,255,0.2)';
-          ctx.font = '6px "Press Start 2P"';
+          ctx.font = '6px "Silkscreen"';
           ctx.textAlign = 'right';
           ctx.fillText('POTION USED', CW - 14, 52);
           ctx.restore();
@@ -1346,7 +1334,7 @@ export default function Racing({ socket }: Props) {
         ctx.fillStyle = '#ff6b35';
         ctx.shadowColor = '#ff6b35';
         ctx.shadowBlur = 8;
-        ctx.font = '8px "Press Start 2P"';
+        ctx.font = '8px "Silkscreen"';
         ctx.textAlign = 'left';
         ctx.fillText('SPRINT!', 170, 24);
         ctx.restore();
@@ -1360,13 +1348,13 @@ export default function Racing({ socket }: Props) {
         ctx.fillStyle = timerColor;
         ctx.shadowColor = timerColor;
         ctx.shadowBlur  = 6;
-        ctx.font = '9px "Press Start 2P"';
+        ctx.font = '9px "Silkscreen"';
         ctx.textAlign = 'right';
         ctx.fillText(p.elapsed.toFixed(2) + 's', CW - 14, 24);
         // Time remaining warning
         if (remaining < 30) {
           ctx.fillStyle = '#ff073a';
-          ctx.font = '7px "Press Start 2P"';
+          ctx.font = '7px "Silkscreen"';
           ctx.fillText(remaining.toFixed(0) + 's LEFT', CW - 14, 38);
         }
         ctx.restore();
@@ -1377,7 +1365,7 @@ export default function Racing({ socket }: Props) {
       ctx.fillStyle = colors.accent;
       ctx.shadowColor = colors.accent;
       ctx.shadowBlur  = 8;
-      ctx.font = '8px "Press Start 2P"';
+      ctx.font = '8px "Silkscreen"';
       ctx.textAlign = 'center';
       ctx.fillText(PLANET_LABELS[planetKey] || planetKey.toUpperCase(), CW / 2, 22);
       ctx.restore();
@@ -1391,7 +1379,7 @@ export default function Racing({ socket }: Props) {
           ctx.fillStyle = sectionTag.color;
           ctx.shadowColor = sectionTag.color;
           ctx.shadowBlur = 6;
-          ctx.font = '8px "Press Start 2P"';
+          ctx.font = '8px "Silkscreen"';
           ctx.textAlign = 'left';
           ctx.fillText(sectionTag.label, 14, CH - 14);
           ctx.restore();
@@ -1412,23 +1400,9 @@ export default function Racing({ socket }: Props) {
         ctx.save();
         ctx.globalAlpha = Math.max(0, 1 - p.elapsed / 5);
         ctx.fillStyle = 'rgba(0,212,255,0.8)';
-        ctx.font = '7px "Press Start 2P"';
+        ctx.font = '7px "Silkscreen"';
         ctx.textAlign = 'center';
         ctx.fillText('[SPACE] JUMP  [A/D or ARROWS] MOVE  [SHIFT] SPRINT', CW / 2, CH - 10);
-        ctx.restore();
-      }
-
-      // Countdown overlay
-      if (statusRef.current === 'countdown') {
-        ctx.save();
-        ctx.fillStyle = 'rgba(5,5,20,0.65)';
-        ctx.fillRect(0, 0, CW, CH);
-        ctx.fillStyle = '#ffd700';
-        ctx.shadowColor = '#ffd700';
-        ctx.shadowBlur  = 20;
-        ctx.font = '60px "Press Start 2P"';
-        ctx.textAlign = 'center';
-        ctx.fillText(String(pRef.current.startTime === 0 ? countdownNum : ''), CW / 2, CH / 2 + 20);
         ctx.restore();
       }
 
@@ -1440,12 +1414,12 @@ export default function Racing({ socket }: Props) {
         ctx.fillStyle = '#ffd700';
         ctx.shadowColor = '#ffd700';
         ctx.shadowBlur  = 20;
-        ctx.font = '20px "Press Start 2P"';
+        ctx.font = '20px "Silkscreen"';
         ctx.textAlign = 'center';
         ctx.fillText('FINISH!', CW / 2, CH / 2 - 20);
         ctx.fillStyle = '#00d4ff';
         ctx.shadowColor = '#00d4ff';
-        ctx.font = '11px "Press Start 2P"';
+        ctx.font = '11px "Silkscreen"';
         ctx.fillText(p.elapsed.toFixed(2) + 's', CW / 2, CH / 2 + 10);
         ctx.restore();
       }
@@ -1520,7 +1494,7 @@ export default function Racing({ socket }: Props) {
 
       // Label
       ctx.fillStyle = '#ffffff66';
-      ctx.font = '9px "Press Start 2P"';
+      ctx.font = '9px "Silkscreen"';
       ctx.textAlign = 'center';
       ctx.fillText((currentPlayer?.name || 'OPPONENT').toUpperCase() + ' IS RACING...', CW / 2, CH / 2);
 
@@ -1666,14 +1640,6 @@ export default function Racing({ socket }: Props) {
           </div>
         )}
 
-        {gameStatus === 'countdown' && (
-          <div className="text-center">
-            <p className="font-pixel text-3xl text-retro-yellow glow-text-gold animate-pixel-pulse">
-              {countdownNum}
-            </p>
-          </div>
-        )}
-
         {gameStatus === 'complete' && (
           <div className="pixel-card">
             <p className="font-pixel text-sm text-retro-yellow glow-text-gold text-center mb-3">RACE COMPLETE</p>
@@ -1684,14 +1650,6 @@ export default function Racing({ socket }: Props) {
                   {pRef.current.elapsed.toFixed(2)}s
                 </p>
               </div>
-              {serverResult && (
-                <div className="text-center">
-                  <p className="font-retro text-lg text-retro-white/40">OFFICIAL TIME</p>
-                  <p className="font-pixel text-xl text-retro-yellow glow-text-gold">
-                    {serverResult.totalTime.toFixed(2)}s
-                  </p>
-                </div>
-              )}
               <div className="text-center">
                 <p className="font-retro text-lg text-retro-white/40">HITS TAKEN</p>
                 <p className="font-pixel text-xl text-retro-pink">
@@ -1742,7 +1700,7 @@ function drawBar(
   ctx.strokeRect(x, y, w, h);
   // Label
   ctx.fillStyle = 'rgba(255,255,255,0.6)';
-  ctx.font      = '6px "Press Start 2P"';
+  ctx.font      = '6px "Silkscreen"';
   ctx.textAlign = 'left';
   ctx.fillText(label, x + 3, y + h - 2);
 }

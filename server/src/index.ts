@@ -103,11 +103,25 @@ io.on('connection', (socket) => {
   socket.on('race:finish', ({ platformTime }, callback) => {
     const room = gameManager.getRoomForPlayer(socket.id);
     if (room) {
+      // Override the server-calculated time with the actual platform time
+      const player = room.players.get(socket.id);
+      if (player && player.raceResults.length > 0) {
+        const lastResult = player.raceResults[player.raceResults.length - 1];
+        // Recalculate total time using platform time
+        player.totalTime -= lastResult.totalTime;
+        lastResult.totalTime = platformTime;
+        player.totalTime += platformTime;
+      }
+
       // Broadcast that this player finished
       io.to(room.code).emit('race:player-finished', {
         playerId: socket.id,
         platformTime,
       });
+
+      // Emit updated state so leaderboard reflects platform times
+      gameManager.emitRoomState(room);
+
       // Advance to next player's turn
       setTimeout(() => {
         if (room) gameManager.nextTurn(room);

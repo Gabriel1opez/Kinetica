@@ -173,7 +173,7 @@ export default function CatapultLaunch({ socket }: Props) {
     const maxDrawDist = Math.max(traj.dist * 1.3, 60);
     const pixelsPerMeter = (W - 140) / maxDrawDist;
 
-    ctx.font      = '8px "Press Start 2P"';
+    ctx.font      = '8px "Silkscreen"';
     ctx.textAlign = 'center';
     for (let m = 10; m <= maxDrawDist; m += 10) {
       const mx = CATAPULT_X + m * pixelsPerMeter;
@@ -203,7 +203,7 @@ export default function CatapultLaunch({ socket }: Props) {
       ctx.fillStyle = 'rgba(255,50,50,0.12)';
       ctx.fillRect(shortStart, groundY - 2, shortEnd - shortStart, 4);
       ctx.fillStyle = '#ff3333aa';
-      ctx.font = '8px "Press Start 2P"';
+      ctx.font = '8px "Silkscreen"';
       ctx.textAlign = 'center';
       ctx.fillText('SHORT', (shortStart + shortEnd) / 2, groundY - 8);
     }
@@ -214,7 +214,7 @@ export default function CatapultLaunch({ socket }: Props) {
     ctx.fillStyle = 'rgba(57,255,20,0.15)';
     ctx.fillRect(optZoneStart, groundY - 2, Math.max(optZoneEnd - optZoneStart, 8), 4);
     ctx.fillStyle = '#39ff14cc';
-    ctx.font = '8px "Press Start 2P"';
+    ctx.font = '8px "Silkscreen"';
     ctx.textAlign = 'center';
     if (optimalX > 50 && optimalX < W - 50) {
       ctx.fillText('OPTIMAL', (optZoneStart + optZoneEnd) / 2, groundY - 8);
@@ -227,7 +227,7 @@ export default function CatapultLaunch({ socket }: Props) {
       ctx.fillStyle = 'rgba(255,165,0,0.12)';
       ctx.fillRect(overStart, groundY - 2, Math.min(overEnd - overStart, W - overStart - 5), 4);
       ctx.fillStyle = '#ffaa33aa';
-      ctx.font = '8px "Press Start 2P"';
+      ctx.font = '8px "Silkscreen"';
       ctx.textAlign = 'center';
       if ((overStart + overEnd) / 2 < W - 40) {
         ctx.fillText('OVER', Math.min((overStart + overEnd) / 2, W - 40), groundY - 8);
@@ -392,7 +392,7 @@ export default function CatapultLaunch({ socket }: Props) {
 
       // Force indicator text near drag point
       ctx.fillStyle = '#ff3366';
-      ctx.font = '9px "Press Start 2P"';
+      ctx.font = '9px "Silkscreen"';
       ctx.textAlign = 'left';
       ctx.fillText(`${force}%`, dragCurrent.x + 12, dragCurrent.y - 4);
       ctx.fillText(`${angle}°`, dragCurrent.x + 12, dragCurrent.y + 10);
@@ -442,7 +442,7 @@ export default function CatapultLaunch({ socket }: Props) {
       ctx.stroke();
       ctx.setLineDash([]);
       ctx.fillStyle = '#39ff14';
-      ctx.font = '8px "Press Start 2P"';
+      ctx.font = '8px "Silkscreen"';
       ctx.textAlign = 'center';
       ctx.fillText(`${traj.height.toFixed(1)}m`, peakX, peakY - 6);
       ctx.restore();
@@ -470,7 +470,7 @@ export default function CatapultLaunch({ socket }: Props) {
     ctx.fillStyle   = '#ffd700';
     ctx.shadowColor = '#ffd700';
     ctx.shadowBlur  = 4;
-    ctx.font        = '10px "Press Start 2P"';
+    ctx.font        = '10px "Silkscreen"';
     ctx.textAlign   = 'center';
     ctx.fillText(`${traj.dist.toFixed(1)}m`, Math.min(landX, W - 50), groundY + 30);
     ctx.restore();
@@ -485,7 +485,7 @@ export default function CatapultLaunch({ socket }: Props) {
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.fillStyle = planet.color;
-    ctx.font      = '9px "Press Start 2P"';
+    ctx.font      = '9px "Silkscreen"';
     ctx.textAlign = 'right';
     ctx.fillText(`${angle}°`, pivotX - 28, pivotY - 8);
     ctx.restore();
@@ -494,7 +494,7 @@ export default function CatapultLaunch({ socket }: Props) {
     if (!isDragging) {
       ctx.save();
       ctx.fillStyle = 'rgba(255,255,255,0.35)';
-      ctx.font = '8px "Press Start 2P"';
+      ctx.font = '8px "Silkscreen"';
       ctx.textAlign = 'center';
       ctx.fillText('DRAG RUNNER TO AIM', cx, 20);
       ctx.fillText('& SET POWER', cx, 32);

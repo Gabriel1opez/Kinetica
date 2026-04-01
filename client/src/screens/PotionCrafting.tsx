@@ -203,6 +203,36 @@ export default function PotionCrafting({ socket }: Props) {
             )}
           </div>
 
+          <button onClick={async () => {
+            if (crafted.length >= 3 || reacting) return;
+            setReacting(true);
+            setRxProgress(0);
+            rxIntervalRef.current = setInterval(() => setRxProgress(p => Math.min(p + 6, 100)), 40);
+            // Try random valid combinations until we get 3 potions
+            const allSymbols = ELEMENTS.map(e => e.symbol);
+            let attempts = 0;
+            while (crafted.length < 3 && attempts < 30) {
+              attempts++;
+              const a = allSymbols[Math.floor(Math.random() * allSymbols.length)];
+              const b = allSymbols[Math.floor(Math.random() * allSymbols.length)];
+              if (a === b) continue;
+              const result = await socket.craftPotion([a, b]);
+              if (result.success && result.potion) {
+                setCrafted(prev => [...prev, result.potion]);
+                if (crafted.length + 1 >= 3) break;
+              }
+            }
+            if (rxIntervalRef.current) clearInterval(rxIntervalRef.current);
+            setReacting(false);
+            setRxProgress(0);
+            setMessage('RANDOM POTIONS BREWED!');
+            setMsgType('ok');
+          }}
+            disabled={crafted.length >= 3 || reacting}
+            className={crafted.length < 3 && !reacting ? 'btn-cyan w-full py-2 text-sm mb-2' : 'btn-ghost w-full py-2 text-sm mb-2'}>
+            AUTO-BREW 3 RANDOM POTIONS
+          </button>
+
           <button onClick={() => socket.setReady(true)} disabled={!!isReady}
             className={isReady ? 'btn-ghost py-3' : 'btn-green py-3'}>
             {isReady ? 'WAITING...' : 'DONE CRAFTING'}

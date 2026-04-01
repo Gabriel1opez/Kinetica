@@ -9,12 +9,11 @@
   }
 
   body {
-    font-family: 'VT323', monospace;
+    font-family: 'Inter', sans-serif;
     background-color: #050514;
     color: #e8e8ff;
     overflow-x: hidden;
-    font-size: 18px;
-    letter-spacing: 0.03em;
+    font-size: 16px;
   }
 
   ::-webkit-scrollbar { width: 6px; height: 6px; }

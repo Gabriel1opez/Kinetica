@@ -196,7 +196,7 @@ export default function Configuration({ socket }: Props) {
 
     // Mass label
     ctx.fillStyle = '#00d4ff';
-    ctx.font = '10px "Press Start 2P"';
+    ctx.font = '10px "Silkscreen"';
     ctx.textAlign = 'center';
     ctx.fillText(`${mass}kg`, cx, by + 16*scale);
 
@@ -210,7 +210,7 @@ export default function Configuration({ socket }: Props) {
 
     statLabels.forEach((sl, i) => {
       ctx.fillStyle = sl.color;
-      ctx.font = '8px "Press Start 2P"';
+      ctx.font = '8px "Silkscreen"';
       ctx.textAlign = 'center';
       ctx.fillText(sl.text, cx, by - 30*scale - i * 14);
     });

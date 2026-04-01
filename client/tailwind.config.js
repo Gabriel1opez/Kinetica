@@ -4,8 +4,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        pixel: ['"Press Start 2P"', 'monospace'],
-        retro: ['"VT323"', 'monospace'],
+        pixel: ['"Silkscreen"', 'monospace'],
+        retro: ['"Inter"', 'sans-serif'],
       },
       colors: {
         retro: {
