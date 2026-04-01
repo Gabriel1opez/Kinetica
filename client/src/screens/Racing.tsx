@@ -251,7 +251,11 @@ function getPlayerPhysics(config: any, planet: string) {
     accel,
     friction,
     staminaDrain,
-    startStamina: Math.min(100 + potionStamina, 100),
+    startStamina: Math.min(100 + potionStamina, 140), // potions can exceed 100
+    // Pass potion info for activatable system
+    potions,
+    potionSpeedMult,
+    potionJumpMult,
   };
 }
 
@@ -319,6 +323,13 @@ export default function Racing({ socket }: Props) {
     elapsed: 0,
     hits: 0,
     dead: false,
+    // Potion activation system
+    activePotionIndex: -1,       // which potion is currently active (-1 = none)
+    potionTimer: 0,              // remaining frames of active potion
+    potionUsed: false,           // one potion per race
+    potionBoostSpeed: 1,         // active multiplier
+    potionBoostJump: 1,          // active multiplier
+    potionFlash: 0,              // visual flash timer
     // explosion particles
     explosions: [] as { x: number; y: number; frame: number; timer: number }[],
   });
@@ -473,6 +484,31 @@ export default function Racing({ socket }: Props) {
       if (!e.repeat && (e.code === 'ArrowUp' || e.code === 'Space' || e.code === 'KeyW')) {
         jumpRef.current = true;
       }
+      // Potion activation
+      if (!e.repeat && e.code === 'KeyE') {
+        const p = pRef.current;
+        if (!p.potionUsed && statusRef.current === 'playing') {
+          const potions = me?.config?.potions || [];
+          const planetIdx = { earth: 0, mars: 1, mercury: 2 }[planetKey] ?? 0;
+          if (potions[planetIdx]) {
+            p.potionUsed = true;
+            p.activePotionIndex = planetIdx;
+            p.potionTimer = 480; // 8 seconds at 60fps
+            p.potionFlash = 30;
+            // Apply boost based on potion type
+            const potion = potions[planetIdx];
+            if (potion.stat === 'speed' || potion.stat === 'explosive_power') {
+              p.potionBoostSpeed = 1.4;
+            } else if (potion.stat === 'jump_power' || potion.stat === 'reaction_time') {
+              p.potionBoostJump = 1.35;
+            } else {
+              // Stamina/endurance potions — instant stamina restore
+              p.stamina = Math.min(140, p.stamina + 50);
+              p.potionBoostSpeed = 1.15;
+            }
+          }
+        }
+      }
     };
     const up = (e: KeyboardEvent) => { keysRef.current.delete(e.code); };
     window.addEventListener('keydown', down);
@@ -503,6 +539,12 @@ export default function Racing({ socket }: Props) {
     pRef.current.vy = 0;
     pRef.current.health = 200;
     pRef.current.dead = false;
+    pRef.current.potionUsed = false;
+    pRef.current.activePotionIndex = -1;
+    pRef.current.potionTimer = 0;
+    pRef.current.potionBoostSpeed = 1;
+    pRef.current.potionBoostJump = 1;
+    pRef.current.potionFlash = 0;
     pRef.current.stamina = physics.startStamina;
     pRef.current.hits = 0;
     pRef.current.elapsed = 0;
@@ -612,14 +654,26 @@ export default function Racing({ socket }: Props) {
         return;
       }
 
+      // Potion timer countdown
+      if (p.potionTimer > 0) {
+        p.potionTimer -= dt;
+        if (p.potionTimer <= 0) {
+          p.potionTimer = 0;
+          p.potionBoostSpeed = 1;
+          p.potionBoostJump = 1;
+          p.activePotionIndex = -1;
+        }
+      }
+      if (p.potionFlash > 0) p.potionFlash -= dt;
+
       // Sprint detection (Shift key)
       const wSprint = keys.has('ShiftLeft') || keys.has('ShiftRight');
       p.sprinting = wSprint && p.stamina > 10;
 
-      // Stamina-based speed penalty + sprint bonus
+      // Stamina-based speed penalty + sprint + potion boost
       const sprintMult = p.sprinting ? 1.6 : 1;
       const staminaMult = p.stamina < 25 ? 0.55 : p.stamina < 50 ? 0.78 : 1;
-      const speedMult = staminaMult * sectionSpeedMod * sprintMult;
+      const speedMult = staminaMult * sectionSpeedMod * sprintMult * p.potionBoostSpeed;
       const ms = physics.maxSpeed * speedMult;
 
       // Horizontal movement
@@ -634,9 +688,9 @@ export default function Racing({ socket }: Props) {
         if (Math.abs(p.vx) < 0.05) p.vx = 0;
       }
 
-      // Jump — costs 12 stamina
+      // Jump — costs 12 stamina, potion can boost
       if (wJump && p.onGround && !p.alreadyJumped && p.stamina >= 12) {
-        p.vy = physics.jumpForce;
+        p.vy = physics.jumpForce * p.potionBoostJump;
         p.onGround = false;
         p.alreadyJumped = true;
         p.stamina = Math.max(0, p.stamina - 12);
@@ -993,6 +1047,52 @@ export default function Racing({ socket }: Props) {
       // Stamina bar
       const stColor = p.stamina > 50 ? '#00d4ff' : p.stamina > 25 ? '#ffd700' : '#ff6b35';
       drawBar(ctx, 14, 34, 150, 12, p.stamina / 100, stColor, 'EN');
+
+      // Potion HUD indicator
+      if (statusRef.current === 'playing') {
+        const potions = me?.config?.potions || [];
+        const planetIdx = { earth: 0, mars: 1, mercury: 2 }[planetKey] ?? 0;
+        const availablePotion = potions[planetIdx];
+
+        if (p.potionTimer > 0 && p.activePotionIndex >= 0) {
+          // Active potion — show glowing indicator
+          const potionName = potions[p.activePotionIndex]?.name || 'POTION';
+          const remaining = Math.ceil(p.potionTimer / 60);
+          ctx.save();
+          ctx.fillStyle = '#e91e8c';
+          ctx.shadowColor = '#e91e8c';
+          ctx.shadowBlur = 12;
+          ctx.font = '8px "Press Start 2P"';
+          ctx.textAlign = 'center';
+          ctx.fillText(`${potionName.toUpperCase()} ${remaining}s`, CW / 2, 44);
+          ctx.restore();
+        } else if (availablePotion && !p.potionUsed) {
+          // Available potion — show "Press E" hint
+          ctx.save();
+          ctx.fillStyle = '#cc88ff';
+          ctx.shadowColor = '#cc88ff';
+          ctx.shadowBlur = 6;
+          ctx.font = '7px "Press Start 2P"';
+          ctx.textAlign = 'right';
+          ctx.fillText(`[E] ${(availablePotion.name || 'POTION').toUpperCase()}`, CW - 14, 52);
+          ctx.restore();
+        } else if (p.potionUsed) {
+          ctx.save();
+          ctx.fillStyle = 'rgba(255,255,255,0.2)';
+          ctx.font = '6px "Press Start 2P"';
+          ctx.textAlign = 'right';
+          ctx.fillText('POTION USED', CW - 14, 52);
+          ctx.restore();
+        }
+
+        // Potion flash effect — screen tint when activated
+        if (p.potionFlash > 0) {
+          ctx.save();
+          ctx.fillStyle = `rgba(233,30,140,${p.potionFlash / 60})`;
+          ctx.fillRect(0, 0, CW, CH);
+          ctx.restore();
+        }
+      }
 
       // Sprint indicator
       if (p.sprinting && statusRef.current === 'playing') {
