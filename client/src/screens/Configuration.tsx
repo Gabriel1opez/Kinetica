@@ -234,14 +234,14 @@ export default function Configuration({ socket }: Props) {
         </div>
         <p className="section-subtitle">Select up to 3 muscle groups to enhance for the race</p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
           {MUSCLES.map(m => {
             const selected = muscles[m.key];
             const disabled = !selected && selectedCount >= 3;
             return (
               <button key={m.key} onClick={() => toggleMuscle(m.key)}
                 disabled={disabled}
-                className="p-3 border-2 transition-all text-center cursor-pointer"
+                className="p-3 border-2 transition-all text-center cursor-pointer min-h-[80px] sm:min-h-0"
                 style={{
                   borderColor: selected ? m.color : '#1e1e5e',
                   background:  selected ? `${m.color}18` : 'rgba(0,0,0,0.3)',
@@ -254,10 +254,11 @@ export default function Configuration({ socket }: Props) {
                   style={{ borderColor: m.color, background: `${m.color}22`, color: m.color }}>
                   {m.label}
                 </div>
-                <p className="font-retro text-xl text-retro-white mb-1">{m.full}</p>
+                <p className="font-retro text-xl text-retro-white mb-0.5">{m.full}</p>
                 <p className="font-retro text-lg" style={{ color: m.color }}>{m.func}</p>
-                <p className="font-retro text-lg text-retro-white/40 mt-1">{m.game}</p>
-                {selected && <p className="font-retro text-lg text-retro-white/50 mt-1 leading-tight">{m.science}</p>}
+                <p className="font-retro text-lg text-retro-white/40 mt-1 hidden sm:block">{m.game}</p>
+                {selected && <p className="font-retro text-[10px] sm:text-lg text-retro-white/50 mt-1 leading-tight hidden sm:block">{m.science}</p>}
+                {selected && <p className="font-retro text-lg text-retro-green mt-1 sm:hidden">✓ {m.effect}</p>}
               </button>
             );
           })}
@@ -278,7 +279,7 @@ export default function Configuration({ socket }: Props) {
             <div className="flex justify-between items-end mb-1">
               <div>
                 <span className="font-retro text-lg" style={{ color: sys.color }}>{sys.label}</span>
-                <span className="font-retro text-lg text-retro-white/40 ml-3">{sys.desc}</span>
+                <span className="font-retro text-lg text-retro-white/40 ml-3 hidden md:inline">{sys.desc}</span>
               </div>
               <span className="font-pixel text-[10px] text-retro-white">
                 {energy[sys.key as keyof typeof energy]}%
@@ -310,29 +311,31 @@ export default function Configuration({ socket }: Props) {
       <div className="pixel-card mb-5">
         <p className="section-title">BODY MASS</p>
         <p className="section-subtitle">Newton's Second Law: F = ma. Greater mass requires more force to accelerate but provides greater momentum (p = mv) for obstacle resistance.</p>
-        <div className="flex items-center gap-3">
-          <span className="font-retro text-lg text-retro-white/40">50kg</span>
-          <input type="range" min={50} max={120} value={mass}
-            onChange={e => setMass(parseInt(e.target.value))}
-            style={{ '--thumb-color': '#00d4ff' } as React.CSSProperties}
-            className="flex-1" />
-          <span className="font-retro text-lg text-retro-white/40">120kg</span>
-          <span className="font-pixel text-sm text-retro-cyan glow-text-cyan w-16 text-right">{mass}kg</span>
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-3">
+            <span className="font-retro text-lg text-retro-white/40 shrink-0">50kg</span>
+            <input type="range" min={50} max={120} value={mass}
+              onChange={e => setMass(parseInt(e.target.value))}
+              style={{ '--thumb-color': '#00d4ff' } as React.CSSProperties}
+              className="flex-1 min-w-0" />
+            <span className="font-retro text-lg text-retro-white/40 shrink-0">120kg</span>
+            <span className="font-pixel text-sm text-retro-cyan glow-text-cyan w-16 text-right shrink-0">{mass}kg</span>
+          </div>
         </div>
       </div>
 
       {/* Character Preview + Stats */}
       <div className="pixel-card mb-8">
         <p className="font-pixel text-sm text-retro-cyan mb-3">YOUR ATHLETE</p>
-        <div className="flex gap-6 items-start mb-4">
+        <div className="flex flex-col sm:flex-row gap-6 items-start mb-4">
           {/* Live character preview */}
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 mx-auto sm:mx-0">
             <canvas ref={previewRef} width={200} height={260}
               className="border border-retro-border"
-              style={{ imageRendering: 'pixelated' }} />
+              style={{ imageRendering: 'pixelated', width: '160px', height: '208px' }} />
           </div>
           {/* Performance bars */}
-          <div className="flex-1">
+          <div className="flex-1 w-full">
             <p className="font-retro text-lg text-retro-white/60 mb-3">PERFORMANCE STATS</p>
             <div className="grid grid-cols-2 gap-3">
           {stats.map(stat => {

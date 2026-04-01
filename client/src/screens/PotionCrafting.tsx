@@ -89,9 +89,9 @@ export default function PotionCrafting({ socket }: Props) {
         <p className="font-retro text-lg text-retro-cyan/60 tracking-widest">CHEMISTRY — COMBINE ELEMENTS TO BREW PERFORMANCE POTIONS</p>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {/* Element grid */}
-        <div className="md:col-span-2 pixel-card">
+        <div className="col-span-1 md:col-span-2 pixel-card">
           <p className="section-title">ELEMENT TABLE</p>
           {/* Legend */}
           <div className="flex gap-3 mb-3 flex-wrap">
@@ -103,22 +103,22 @@ export default function PotionCrafting({ socket }: Props) {
             ))}
           </div>
 
-          <div className="grid grid-cols-4 sm:grid-cols-8 gap-1.5">
+          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
             {ELEMENTS.map(el => {
               const isSel = selected.includes(el.symbol);
               return (
                 <button key={el.symbol} onClick={() => toggleEl(el.symbol)}
-                  className="p-1.5 border transition-all cursor-pointer text-center min-h-[54px] flex flex-col items-center justify-center"
+                  className="p-2 border transition-all cursor-pointer text-center min-h-[64px] flex flex-col items-center justify-center"
                   style={{
                     borderColor: isSel ? el.color : '#1e1e5e',
                     background:  isSel ? `${el.color}22` : 'rgba(0,0,0,0.35)',
                     boxShadow:   isSel ? `0 0 10px ${el.color}55` : 'none',
-                    transform:   isSel ? 'scale(1.08)' : 'scale(1)',
+                    transform:   isSel ? 'scale(1.06)' : 'scale(1)',
                   }}>
-                  <span className="font-retro text-lg block leading-tight" style={{ color: el.color }}>
+                  <span className="font-retro text-base sm:text-lg block leading-tight" style={{ color: el.color }}>
                     {el.symbol}
                   </span>
-                  <span className="font-retro text-base text-retro-white/35 mt-0.5 leading-tight block">
+                  <span className="font-retro text-[10px] sm:text-base text-retro-white/35 mt-0.5 leading-tight block">
                     {el.name}
                   </span>
                 </button>
