@@ -5,89 +5,218 @@
 @layer base {
   * {
     image-rendering: pixelated;
+    box-sizing: border-box;
   }
 
   body {
     font-family: 'Press Start 2P', monospace;
-    background-color: #1a0a2e;
-    color: #ffffff;
+    background-color: #050514;
+    color: #e8e8ff;
+    overflow-x: hidden;
   }
 
-  ::-webkit-scrollbar {
-    width: 8px;
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: #0d0d2a; }
+  ::-webkit-scrollbar-thumb { background: #1e1e5e; border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: #00d4ff44; }
+
+  input[type='range'] {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 8px;
+    background: #0d0d2a;
+    border: 1px solid #1e1e5e;
+    border-radius: 0;
+    cursor: pointer;
+    outline: none;
   }
-  ::-webkit-scrollbar-track {
-    background: #1a0a2e;
+  input[type='range']::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    background: var(--thumb-color, #00d4ff);
+    border: 2px solid #050514;
+    border-radius: 0;
+    cursor: pointer;
+    box-shadow: 0 0 6px var(--thumb-color, #00d4ff);
   }
-  ::-webkit-scrollbar-thumb {
-    background: #4a1a6b;
-    border-radius: 4px;
+  input[type='range']::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    background: var(--thumb-color, #00d4ff);
+    border: 2px solid #050514;
+    border-radius: 0;
+    cursor: pointer;
   }
 }
 
 @layer components {
-  .pixel-border {
-    border: 4px solid;
-    border-image: repeating-linear-gradient(
-      90deg,
-      currentColor 0px,
-      currentColor 4px,
-      transparent 4px,
-      transparent 8px
-    ) 4;
-  }
-
+  /* ── Buttons ─────────────────────────────────── */
   .pixel-btn {
     @apply px-6 py-3 text-xs font-pixel uppercase tracking-wider
-    border-4 border-white cursor-pointer transition-all duration-100
-    hover:translate-y-[-2px] active:translate-y-[2px];
-    box-shadow: 4px 4px 0px rgba(0,0,0,0.5);
+           border-2 cursor-pointer transition-all duration-100
+           relative overflow-hidden select-none;
+    box-shadow: 4px 4px 0 rgba(0,0,0,0.6);
   }
-  .pixel-btn:hover {
-    box-shadow: 6px 6px 0px rgba(0,0,0,0.5);
-  }
-  .pixel-btn:active {
-    box-shadow: 2px 2px 0px rgba(0,0,0,0.5);
-  }
+  .pixel-btn:hover  { transform: translateY(-2px); box-shadow: 6px 6px 0 rgba(0,0,0,0.6); }
+  .pixel-btn:active { transform: translateY(1px);  box-shadow: 2px 2px 0 rgba(0,0,0,0.6); }
+  .pixel-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
 
+  .btn-cyan {
+    @apply pixel-btn border-retro-cyan text-retro-cyan bg-retro-cyan/10;
+    text-shadow: 0 0 8px #00d4ff;
+  }
+  .btn-cyan:hover { @apply bg-retro-cyan/20; box-shadow: 6px 6px 0 rgba(0,0,0,0.6), 0 0 16px rgba(0,212,255,0.3); }
+
+  .btn-pink {
+    @apply pixel-btn border-retro-pink bg-retro-pink text-white;
+  }
+  .btn-pink:hover { box-shadow: 6px 6px 0 rgba(0,0,0,0.6), 0 0 16px rgba(255,51,102,0.4); }
+
+  .btn-green {
+    @apply pixel-btn border-retro-green bg-retro-green text-black;
+  }
+  .btn-green:hover { box-shadow: 6px 6px 0 rgba(0,0,0,0.6), 0 0 16px rgba(57,255,20,0.4); }
+
+  .btn-gold {
+    @apply pixel-btn border-retro-yellow bg-retro-yellow text-black;
+  }
+  .btn-gold:hover { box-shadow: 6px 6px 0 rgba(0,0,0,0.6), 0 0 16px rgba(255,215,0,0.4); }
+
+  .btn-ghost {
+    @apply pixel-btn border-retro-border text-retro-white/60 bg-transparent;
+  }
+  .btn-ghost:hover { @apply border-retro-white/40 text-retro-white; }
+
+  /* Legacy alias used by existing code */
+  .pixel-btn.bg-retro-pink  { @apply btn-pink; }
+  .pixel-btn.bg-retro-green { @apply btn-green; }
+
+  /* ── Cards ───────────────────────────────────── */
   .pixel-card {
-    @apply p-4 border-4 border-white/30;
-    background: rgba(74, 26, 107, 0.6);
-    box-shadow: 4px 4px 0px rgba(0,0,0,0.3);
+    @apply p-4 border border-retro-border;
+    background: rgba(13,13,42,0.88);
+    backdrop-filter: blur(6px);
+    box-shadow: 4px 4px 0 rgba(0,0,0,0.4);
   }
 
+  .card-glow-cyan {
+    @apply pixel-card;
+    border-color: rgba(0,212,255,0.35);
+    box-shadow: 4px 4px 0 rgba(0,0,0,0.4), 0 0 20px rgba(0,212,255,0.08);
+  }
+
+  .card-glow-pink {
+    @apply pixel-card;
+    border-color: rgba(255,51,102,0.35);
+    box-shadow: 4px 4px 0 rgba(0,0,0,0.4), 0 0 20px rgba(255,51,102,0.08);
+  }
+
+  /* ── Text glow helpers ───────────────────────── */
+  .glow-text         { text-shadow: 0 0 10px currentColor, 0 0 22px currentColor; }
+  .glow-text-cyan    { text-shadow: 0 0 10px #00d4ff, 0 0 30px rgba(0,212,255,0.5); }
+  .glow-text-gold    { text-shadow: 0 0 10px #ffd700, 0 0 30px rgba(255,215,0,0.5); }
+  .glow-text-pink    { text-shadow: 0 0 10px #ff3366, 0 0 30px rgba(255,51,102,0.5); }
+  .glow-text-green   { text-shadow: 0 0 10px #39ff14, 0 0 30px rgba(57,255,20,0.5); }
+
+  /* ── Inputs ──────────────────────────────────── */
+  .pixel-input {
+    @apply w-full bg-retro-panel border border-retro-border px-4 py-3
+           font-pixel text-sm text-retro-white outline-none transition-colors;
+    box-shadow: inset 2px 2px 0 rgba(0,0,0,0.4);
+  }
+  .pixel-input:focus {
+    border-color: #00d4ff;
+    box-shadow: inset 2px 2px 0 rgba(0,0,0,0.4), 0 0 0 1px rgba(0,212,255,0.3);
+  }
+  .pixel-input::placeholder { color: rgba(232,232,255,0.25); }
+
+  /* ── Scanlines ───────────────────────────────── */
   .scanline-overlay {
     pointer-events: none;
     position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
+    inset: 0;
     background: repeating-linear-gradient(
       0deg,
       transparent,
       transparent 2px,
-      rgba(0, 0, 0, 0.05) 2px,
-      rgba(0, 0, 0, 0.05) 4px
+      rgba(0,0,0,0.05) 2px,
+      rgba(0,0,0,0.05) 4px
     );
     z-index: 9999;
   }
 
-  .glow-text {
-    text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
+  /* ── Grid background ─────────────────────────── */
+  .retro-grid-bg {
+    background-image:
+      linear-gradient(rgba(0,212,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
   }
 
-  .retro-gradient {
-    background: linear-gradient(180deg, #ff6b35 0%, #e91e8c 50%, #4a1a6b 100%);
+  /* ── Stat / progress bars ────────────────────── */
+  .stat-bar {
+    @apply h-3 border border-white/15 relative overflow-hidden;
+    background: rgba(0,0,0,0.5);
+    box-shadow: inset 1px 1px 0 rgba(0,0,0,0.5);
+  }
+  .stat-bar-fill {
+    @apply h-full transition-all duration-300;
+    box-shadow: 2px 0 8px currentColor;
   }
 
+  /* ── Neon border helpers ─────────────────────── */
+  .border-neon-cyan  { border-color: #00d4ff; box-shadow: 0 0 8px rgba(0,212,255,0.35), inset 0 0 8px rgba(0,212,255,0.06); }
+  .border-neon-pink  { border-color: #ff3366; box-shadow: 0 0 8px rgba(255,51,102,0.35); }
+  .border-neon-gold  { border-color: #ffd700; box-shadow: 0 0 8px rgba(255,215,0,0.35); }
+  .border-neon-green { border-color: #39ff14; box-shadow: 0 0 8px rgba(57,255,20,0.35); }
+
+  /* ── Stars ───────────────────────────────────── */
   .star {
     position: absolute;
-    background: white;
+    background: #e8e8ff;
     border-radius: 50%;
     animation: twinkle var(--duration, 3s) ease-in-out infinite;
     animation-delay: var(--delay, 0s);
   }
 
-  @keyframes twinkle {
-    0%, 100% { opacity: 0.3; }
-    50% { opacity: 1; }
+  /* ── Marching ants border ────────────────────── */
+  .marching-border {
+    background-image: repeating-linear-gradient(
+      90deg,
+      #00d4ff 0, #00d4ff 8px,
+      transparent 8px, transparent 16px
+    );
+    background-size: 16px 2px;
+    background-repeat: repeat-x;
+    background-position: top left;
+    animation: march 0.5s linear infinite;
   }
+
+  /* ── Section divider ─────────────────────────── */
+  .section-title {
+    @apply font-pixel text-xs text-retro-cyan glow-text-cyan mb-1;
+    letter-spacing: 0.1em;
+  }
+  .section-subtitle {
+    @apply font-pixel text-[8px] text-retro-white/50 mb-4;
+  }
+
+  /* ── Avatar badge ────────────────────────────── */
+  .avatar-badge {
+    @apply w-10 h-10 flex items-center justify-center font-pixel text-[7px]
+           border-2 transition-all duration-100 cursor-pointer select-none;
+  }
+
+  /* ── Retro hero gradient ─────────────────────── */
+  .retro-gradient {
+    background: linear-gradient(180deg, #0a0a2e 0%, #0d0d3a 40%, #1a0a3e 100%);
+  }
+}
+
+/* Keyframes used by components */
+@keyframes twinkle {
+  0%, 100% { opacity: 0.2; transform: scale(1); }
+  50%       { opacity: 1;   transform: scale(1.3); }
 }

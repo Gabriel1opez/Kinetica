@@ -1,70 +1,89 @@
-import React from 'react';
+const AVATARS = [
+  { label: 'RUN', color: '#ff3366' }, { label: 'LFT', color: '#ffd700' },
+  { label: 'ACR', color: '#39ff14' }, { label: 'SWM', color: '#00d4ff' },
+  { label: 'ZAP', color: '#ff6b35' }, { label: 'SCI', color: '#cc88ff' },
+  { label: 'ALC', color: '#e91e8c' }, { label: 'RKT', color: '#00ffdd' },
+];
 
-const AVATARS = ['🏃', '🏋️', '🤸', '🏊', '⚡', '🔬', '🧪', '🚀'];
-
-const PLANET_INFO: Record<string, { name: string; emoji: string }> = {
-  earth: { name: 'Earth', emoji: '🌍' },
-  mars: { name: 'Mars', emoji: '🔴' },
-  mercury: { name: 'Mercury', emoji: '⚫' },
+const PLANET_DISPLAY: Record<string, { label: string; color: string }> = {
+  earth:   { label: 'EARTH',   color: '#00d4ff' },
+  mars:    { label: 'MARS',    color: '#ff6b35' },
+  mercury: { label: 'MERCURY', color: '#aaaacc' },
 };
 
-interface Props {
-  socket: any;
-}
+const RANK_COLORS = ['#ffd700', '#aaaacc', '#cd853f'];
+const RANK_LABELS = ['1ST', '2ND', '3RD'];
+
+interface Props { socket: any; }
 
 export default function Results({ socket }: Props) {
   const room = socket.roomState;
   if (!room) return null;
 
-  const me = room.players.find((p: any) => p.id === socket.playerId);
+  const me     = room.players.find((p: any) => p.id === socket.playerId);
   const isHost = me?.isHost;
-  const planet = PLANET_INFO[room.currentPlanet] || { name: 'Unknown', emoji: '?' };
+  const planet = PLANET_DISPLAY[room.currentPlanet] || { label: 'UNKNOWN', color: '#ffffff' };
 
-  // Sort players by latest race time
   const sorted = [...room.players].sort((a: any, b: any) => {
-    const aTime = a.raceResults?.[a.raceResults.length - 1]?.totalTime ?? Infinity;
-    const bTime = b.raceResults?.[b.raceResults.length - 1]?.totalTime ?? Infinity;
-    return aTime - bTime;
+    const aT = a.raceResults?.[a.raceResults.length - 1]?.totalTime ?? Infinity;
+    const bT = b.raceResults?.[b.raceResults.length - 1]?.totalTime ?? Infinity;
+    return aT - bT;
   });
 
-  // Get my latest race result for feedback
-  const myLatestResult = me?.raceResults?.[me.raceResults.length - 1];
+  const myResult = me?.raceResults?.[me.raceResults.length - 1];
 
   return (
-    <div className="min-h-screen px-4 py-8 max-w-4xl mx-auto">
-      <h2 className="font-pixel text-xl text-retro-yellow text-center mb-2">
-        {planet.emoji} {planet.name} — Results
-      </h2>
+    <div className="min-h-screen px-4 py-8 max-w-4xl mx-auto animate-fade-in">
+      {/* Header */}
+      <div className="text-center mb-6">
+        <p className="font-pixel text-[7px] text-retro-white/40 mb-1">RACE RESULTS</p>
+        <h2 className="font-pixel text-xl glow-text mb-1" style={{ color: planet.color }}>
+          {planet.label}
+        </h2>
+      </div>
 
       {/* Leaderboard */}
       <div className="pixel-card mb-6">
-        <h3 className="font-pixel text-xs text-retro-cyan mb-4 text-center">Race Rankings</h3>
-        <div className="space-y-3">
+        <p className="section-title text-center mb-4">RACE RANKINGS</p>
+        <div className="space-y-2">
           {sorted.map((player: any, i: number) => {
-            const latestRace = player.raceResults?.[player.raceResults.length - 1];
-            const medals = ['🥇', '🥈', '🥉'];
+            const latest  = player.raceResults?.[player.raceResults.length - 1];
+            const av      = AVATARS[player.avatar] || AVATARS[0];
+            const isMe    = player.id === socket.playerId;
+            const rankCol = RANK_COLORS[i] || '#ffffff44';
             return (
-              <div
-                key={player.id}
-                className={`flex items-center gap-3 p-3 border-2 ${
-                  player.id === socket.playerId ? 'border-retro-yellow' : 'border-white/10'
-                } ${i === 0 ? 'bg-retro-yellow/10' : ''}`}
-              >
-                <span className="font-pixel text-xl w-8 text-center">
-                  {medals[i] || `${i + 1}.`}
-                </span>
-                <span className="text-xl">{AVATARS[player.avatar]}</span>
-                <div className="flex-1">
-                  <p className="font-pixel text-[10px] text-white">{player.name}</p>
-                  <p className="font-pixel text-[7px] text-white/50">
-                    Total: {player.totalTime.toFixed(2)}s
+              <div key={player.id}
+                className="flex items-center gap-3 p-3 border transition-all"
+                style={{
+                  borderColor: isMe ? '#ffd700' : i === 0 ? 'rgba(255,215,0,0.25)' : '#1e1e5e',
+                  background:  i === 0 ? 'rgba(255,215,0,0.06)' : isMe ? 'rgba(255,215,0,0.04)' : 'transparent',
+                  boxShadow:   isMe ? '0 0 12px rgba(255,215,0,0.15)' : undefined,
+                }}>
+                {/* Rank */}
+                <div className="w-10 h-10 flex items-center justify-center border flex-shrink-0 font-pixel text-[8px]"
+                  style={{ borderColor: rankCol, color: rankCol, background: `${rankCol}18` }}>
+                  {RANK_LABELS[i] || `#${i+1}`}
+                </div>
+                {/* Avatar */}
+                <div className="w-8 h-8 flex items-center justify-center border font-pixel text-[6px] flex-shrink-0"
+                  style={{ borderColor: av.color, color: av.color, background: `${av.color}18` }}>
+                  {av.label}
+                </div>
+                {/* Name + total */}
+                <div className="flex-1 min-w-0">
+                  <p className="font-pixel text-[9px] text-retro-white truncate">
+                    {player.name}{isMe ? ' [YOU]' : ''}
+                  </p>
+                  <p className="font-pixel text-[6px] text-retro-white/40 mt-0.5">
+                    CUMULATIVE: {player.totalTime.toFixed(2)}s
                   </p>
                 </div>
+                {/* Race time */}
                 <div className="text-right">
-                  <p className="font-pixel text-sm text-retro-yellow">
-                    {latestRace?.totalTime?.toFixed(2) || '--'}s
+                  <p className="font-pixel text-base glow-text-gold text-retro-yellow">
+                    {latest?.totalTime?.toFixed(2) ?? '--'}s
                   </p>
-                  <p className="font-pixel text-[6px] text-white/40">this race</p>
+                  <p className="font-pixel text-[5px] text-retro-white/30">THIS RACE</p>
                 </div>
               </div>
             );
@@ -72,37 +91,31 @@ export default function Results({ socket }: Props) {
         </div>
       </div>
 
-      {/* Educational Feedback */}
-      {myLatestResult?.feedback && (
+      {/* Science feedback */}
+      {myResult?.feedback?.length > 0 && (
         <div className="pixel-card mb-8">
-          <h3 className="font-pixel text-xs text-retro-pink mb-4">
-            📊 Science Review — Why You Got That Time
-          </h3>
-          <div className="space-y-3">
-            {myLatestResult.feedback.map((fb: string, i: number) => (
-              <div key={i} className="p-3 border border-white/10 bg-black/20">
-                <p className="font-pixel text-[7px] text-white/80 leading-relaxed">{fb}</p>
+          <p className="section-title mb-3">SCIENCE REVIEW</p>
+          <p className="section-subtitle">Why you got that time</p>
+          <div className="space-y-2">
+            {myResult.feedback.map((fb: string, i: number) => (
+              <div key={i} className="p-2 border border-retro-border bg-black/20 flex gap-2">
+                <span className="font-pixel text-[8px] text-retro-cyan flex-shrink-0">&gt;</span>
+                <p className="font-pixel text-[6px] text-retro-white/75 leading-relaxed">{fb}</p>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Next Planet or Advance */}
       <div className="text-center">
         {isHost ? (
-          <button
-            onClick={() => socket.setReady(true)}
-            className="pixel-btn bg-retro-green text-black"
-          >
-            {room.currentPlanet === 'mercury' ? 'View Final Results' : 'Next Planet →'}
+          <button onClick={() => socket.setReady(true)}
+            className="btn-green px-10 py-3 text-sm">
+            {room.currentPlanet === 'mercury' ? 'VIEW FINAL RESULTS' : 'NEXT PLANET'}
           </button>
         ) : (
-          <button
-            onClick={() => socket.setReady(true)}
-            className="pixel-btn bg-retro-purple text-white"
-          >
-            Ready
+          <button onClick={() => socket.setReady(true)} className="btn-cyan px-10 py-3 text-sm">
+            READY
           </button>
         )}
       </div>

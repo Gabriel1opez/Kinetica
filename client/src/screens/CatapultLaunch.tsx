@@ -1,240 +1,261 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 
-const PLANET_DATA: Record<string, { gravity: number; color: string; emoji: string; name: string }> = {
-  earth: { gravity: 9.8, color: '#39ff14', emoji: '🌍', name: 'Earth' },
-  mars: { gravity: 3.7, color: '#ff6b35', emoji: '🔴', name: 'Mars' },
-  mercury: { gravity: 3.7, color: '#808080', emoji: '⚫', name: 'Mercury' },
+const PLANET_DATA: Record<string, { gravity: number; color: string; label: string }> = {
+  earth:   { gravity: 9.8, color: '#00d4ff', label: 'EARTH' },
+  mars:    { gravity: 3.7, color: '#ff6b35', label: 'MARS'  },
+  mercury: { gravity: 3.7, color: '#aaaacc', label: 'MERCURY' },
 };
 
-interface Props {
-  socket: any;
-}
+interface Props { socket: any; }
 
 export default function CatapultLaunch({ socket }: Props) {
-  const room = socket.roomState;
-  const me = room?.players.find((p: any) => p.id === socket.playerId);
+  const room   = socket.roomState;
+  const me     = room?.players.find((p: any) => p.id === socket.playerId);
   const planet = PLANET_DATA[room?.currentPlanet || 'earth'];
 
   const [angle, setAngle] = useState(45);
   const [force, setForce] = useState(50);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Calculate trajectory for preview
   const calcTrajectory = useCallback(() => {
-    const g = planet?.gravity || 9.8;
-    const mass = me?.config?.mass || 70;
-    const angleRad = (angle * Math.PI) / 180;
-    const v0 = 5 + (force / 100) * 25;
-    const massFactor = 70 / mass;
-    const vx = v0 * Math.cos(angleRad) * massFactor;
-    const vy = v0 * Math.sin(angleRad) * massFactor;
-    const totalTime = (2 * vy) / g;
-    const maxDist = vx * totalTime;
-    const maxHeight = (vy * vy) / (2 * g);
-
-    return { vx, vy, totalTime, maxDist, maxHeight, g };
+    const g      = planet?.gravity || 9.8;
+    const mass   = me?.config?.mass || 70;
+    const v0     = 5 + (force / 100) * 25;
+    const mf     = 70 / mass;
+    const rad    = (angle * Math.PI) / 180;
+    const vx     = v0 * Math.cos(rad) * mf;
+    const vy     = v0 * Math.sin(rad) * mf;
+    const tFly   = (2 * vy) / g;
+    const dist   = vx * tFly;
+    const height = (vy * vy) / (2 * g);
+    return { vx, vy, tFly, dist, height, g };
   }, [angle, force, planet, me]);
 
-  // Draw trajectory on canvas
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    const ctx  = canvas.getContext('2d')!;
+    const W    = canvas.width;
+    const H    = canvas.height;
 
-    const w = canvas.width;
-    const h = canvas.height;
-    ctx.clearRect(0, 0, w, h);
+    ctx.clearRect(0, 0, W, H);
 
-    // Ground
-    ctx.fillStyle = '#2d1b4e';
-    ctx.fillRect(0, 0, w, h);
+    // Background
+    const bg = ctx.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, '#050514');
+    bg.addColorStop(1, '#0a0a28');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
 
     // Grid
-    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-    ctx.lineWidth = 1;
-    for (let x = 0; x < w; x += 40) {
-      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+    ctx.strokeStyle = 'rgba(0,212,255,0.05)';
+    ctx.lineWidth   = 1;
+    for (let x = 0; x < W; x += 40) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
     }
-    for (let y = 0; y < h; y += 40) {
-      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+    for (let y = 0; y < H; y += 40) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
     }
+
+    const groundY = H - 45;
 
     // Ground line
-    const groundY = h - 40;
-    ctx.strokeStyle = '#39ff14';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(0, groundY);
-    ctx.lineTo(w, groundY);
-    ctx.stroke();
+    ctx.save();
+    ctx.shadowColor = planet.color;
+    ctx.shadowBlur  = 8;
+    ctx.strokeStyle = planet.color;
+    ctx.lineWidth   = 2;
+    ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(W, groundY); ctx.stroke();
+    ctx.restore();
 
-    // Catapult
-    const startX = 60;
-    ctx.fillStyle = '#cd853f';
-    ctx.fillRect(startX - 10, groundY - 30, 20, 30);
-    ctx.fillRect(startX - 20, groundY - 10, 40, 10);
+    // Catapult structure
+    const startX = 70;
+    ctx.fillStyle = '#2a1a0a';
+    ctx.fillRect(startX - 14, groundY - 34, 28, 34);
+    ctx.fillStyle = '#3a2a1a';
+    ctx.fillRect(startX - 22, groundY - 12, 44, 12);
+    // Arm
+    const armRad = (angle * Math.PI) / 180;
+    ctx.save();
+    ctx.strokeStyle = '#ff6b35';
+    ctx.shadowColor = '#ff6b35';
+    ctx.shadowBlur  = 6;
+    ctx.lineWidth   = 3;
+    ctx.beginPath();
+    ctx.moveTo(startX, groundY - 34);
+    ctx.lineTo(startX + Math.cos(armRad) * 44, groundY - 34 - Math.sin(armRad) * 44);
+    ctx.stroke();
+    // Projectile on arm tip
+    ctx.fillStyle = '#ffd700';
+    ctx.shadowColor = '#ffd700';
+    ctx.shadowBlur  = 10;
+    ctx.beginPath();
+    ctx.arc(startX + Math.cos(armRad) * 44, groundY - 34 - Math.sin(armRad) * 44, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
 
     // Trajectory arc
-    const traj = calcTrajectory();
-    const scaleX = (w - 100) / Math.max(traj.maxDist, 10);
-    const scaleY = (h - 100) / Math.max(traj.maxHeight * 1.3, 5);
-    const scale = Math.min(scaleX, scaleY);
+    const traj  = calcTrajectory();
+    const scaleX = (W - 120) / Math.max(traj.dist, 1);
+    const scaleY = (H - 80)  / Math.max(traj.height * 1.4, 1);
+    const scale  = Math.min(scaleX, scaleY);
 
+    ctx.save();
     ctx.strokeStyle = '#ffd700';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([4, 4]);
+    ctx.shadowColor = '#ffd700';
+    ctx.shadowBlur  = 5;
+    ctx.lineWidth   = 2;
+    ctx.setLineDash([5, 5]);
     ctx.beginPath();
-
-    const steps = 50;
+    const steps = 60;
     for (let i = 0; i <= steps; i++) {
-      const t = (i / steps) * traj.totalTime;
+      const t = (i / steps) * traj.tFly;
       const x = startX + traj.vx * t * scale;
       const y = groundY - (traj.vy * t - 0.5 * traj.g * t * t) * scale;
-
       if (i === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, Math.min(y, groundY));
-
       if (y >= groundY && i > 0) break;
     }
     ctx.stroke();
     ctx.setLineDash([]);
+    ctx.restore();
 
-    // Landing point
-    const landX = startX + traj.maxDist * scale;
-    ctx.fillStyle = '#ff073a';
+    // Landing spot
+    const landX = Math.min(startX + traj.dist * scale, W - 24);
+    ctx.save();
+    ctx.fillStyle   = '#ff3366';
+    ctx.shadowColor = '#ff3366';
+    ctx.shadowBlur  = 12;
     ctx.beginPath();
-    ctx.arc(Math.min(landX, w - 20), groundY, 6, 0, Math.PI * 2);
+    ctx.arc(landX, groundY, 7, 0, Math.PI * 2);
     ctx.fill();
+    ctx.restore();
 
-    // Distance text
-    ctx.fillStyle = '#ffd700';
-    ctx.font = '12px "Press Start 2P"';
-    ctx.fillText(`${traj.maxDist.toFixed(1)}m`, Math.min(landX, w - 80), groundY + 25);
+    // Distance label
+    ctx.save();
+    ctx.fillStyle   = '#ffd700';
+    ctx.shadowColor = '#ffd700';
+    ctx.shadowBlur  = 6;
+    ctx.font        = '9px "Press Start 2P"';
+    ctx.textAlign   = 'center';
+    ctx.fillText(`${traj.dist.toFixed(1)}m`, Math.min(landX, W - 50), groundY + 26);
+    ctx.restore();
 
-    // Angle indicator
-    const angleRad = (angle * Math.PI) / 180;
-    const lineLen = 50;
-    ctx.strokeStyle = '#00d4ff';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([]);
+    // Angle arc indicator
+    ctx.save();
+    ctx.strokeStyle = planet.color + 'aa';
+    ctx.lineWidth   = 1;
+    ctx.setLineDash([2, 3]);
     ctx.beginPath();
-    ctx.moveTo(startX, groundY - 30);
-    ctx.lineTo(startX + Math.cos(angleRad) * lineLen, groundY - 30 - Math.sin(angleRad) * lineLen);
+    ctx.arc(startX, groundY - 34, 28, -Math.PI, -(Math.PI) + (angle * Math.PI / 180));
     ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = planet.color;
+    ctx.font      = '7px "Press Start 2P"';
+    ctx.textAlign = 'left';
+    ctx.fillText(`${angle}°`, startX + 32, groundY - 42);
+    ctx.restore();
 
-  }, [angle, force, calcTrajectory]);
+  }, [angle, force, calcTrajectory, planet]);
 
   const handleReady = () => {
     socket.updateConfig({ catapult: { angle, force } });
     socket.setReady(true);
   };
 
-  const traj = calcTrajectory();
+  const traj   = calcTrajectory();
   const isReady = me?.isReady;
 
   return (
-    <div className="min-h-screen px-4 py-8 max-w-4xl mx-auto">
-      <h2 className="font-pixel text-xl text-retro-yellow text-center mb-2">
-        Catapult Launch
-      </h2>
-      <p className="font-pixel text-[8px] text-retro-cyan text-center mb-2">
-        Physics — Projectile Motion
-      </p>
-      <p className="font-pixel text-[10px] text-center mb-6">
-        <span style={{ color: planet?.color }}>{planet?.emoji} {planet?.name}</span>
-        <span className="text-white/50"> — Gravity: {planet?.gravity} m/s²</span>
-      </p>
+    <div className="min-h-screen px-4 py-8 max-w-4xl mx-auto animate-fade-in">
+      <div className="text-center mb-5">
+        <h2 className="font-pixel text-lg text-retro-yellow glow-text-gold mb-1">CATAPULT LAUNCH</h2>
+        <p className="font-pixel text-[7px] text-retro-cyan/60 mb-1 tracking-widest">PHYSICS — PROJECTILE MOTION</p>
+        <p className="font-pixel text-[9px]" style={{ color: planet.color }}>
+          {planet.label} &mdash; <span className="text-retro-white/50">g = {planet.gravity} m/s²</span>
+        </p>
+      </div>
 
       {/* Canvas */}
-      <div className="pixel-card mb-6">
-        <canvas
-          ref={canvasRef}
-          width={700}
-          height={300}
-          className="w-full border border-white/10"
-          style={{ imageRendering: 'auto' }}
-        />
+      <div className="pixel-card mb-5 p-1">
+        <canvas ref={canvasRef} width={700} height={280} className="w-full"
+          style={{ imageRendering: 'auto' }} />
       </div>
 
       {/* Controls */}
-      <div className="grid md:grid-cols-2 gap-6 mb-6">
+      <div className="grid md:grid-cols-2 gap-4 mb-4">
         <div className="pixel-card">
-          <h3 className="font-pixel text-[10px] text-retro-pink mb-3">Launch Angle (θ)</h3>
-          <div className="flex items-center gap-4">
-            <span className="font-pixel text-[8px] text-white/50">0°</span>
-            <input
-              type="range"
-              min={5}
-              max={85}
-              value={angle}
+          <p className="section-title">LAUNCH ANGLE (θ)</p>
+          <div className="flex items-center gap-3 mb-1">
+            <span className="font-pixel text-[7px] text-retro-white/40">5°</span>
+            <input type="range" min={5} max={85} value={angle}
               onChange={e => setAngle(parseInt(e.target.value))}
-              className="flex-1 h-3 appearance-none bg-black/50 border border-white/20 cursor-pointer"
-              style={{ accentColor: '#00d4ff' }}
-            />
-            <span className="font-pixel text-[8px] text-white/50">90°</span>
+              style={{ '--thumb-color': planet.color } as React.CSSProperties}
+              className="flex-1" />
+            <span className="font-pixel text-[7px] text-retro-white/40">85°</span>
           </div>
-          <p className="font-pixel text-lg text-retro-cyan text-center mt-2">{angle}°</p>
-          <p className="font-pixel text-[6px] text-white/40 text-center mt-1">
-            Optimal range at 45° (sin(2θ) = 1)
+          <p className="font-pixel text-xl text-center mt-1 glow-text" style={{ color: planet.color }}>{angle}°</p>
+          <p className="font-pixel text-[5px] text-retro-white/30 text-center mt-1">
+            OPTIMAL AT 45° WHERE sin(2θ) = 1
           </p>
+          {/* Visual angle quality indicator */}
+          <div className="mt-2 stat-bar h-2">
+            <div className="stat-bar-fill transition-all duration-200"
+              style={{
+                width: `${(1 - Math.abs(angle - 45) / 40) * 100}%`,
+                background: Math.abs(angle - 45) < 10 ? '#39ff14' : '#ffd700',
+              }} />
+          </div>
+          <p className="font-pixel text-[5px] text-center mt-1 text-retro-white/30">ANGLE EFFICIENCY</p>
         </div>
 
         <div className="pixel-card">
-          <h3 className="font-pixel text-[10px] text-retro-pink mb-3">Launch Force</h3>
-          <div className="flex items-center gap-4">
-            <span className="font-pixel text-[8px] text-white/50">Min</span>
-            <input
-              type="range"
-              min={10}
-              max={100}
-              value={force}
+          <p className="section-title">LAUNCH FORCE</p>
+          <div className="flex items-center gap-3 mb-1">
+            <span className="font-pixel text-[7px] text-retro-white/40">MIN</span>
+            <input type="range" min={10} max={100} value={force}
               onChange={e => setForce(parseInt(e.target.value))}
-              className="flex-1 h-3 appearance-none bg-black/50 border border-white/20 cursor-pointer"
-              style={{ accentColor: '#ff6b35' }}
-            />
-            <span className="font-pixel text-[8px] text-white/50">Max</span>
+              style={{ '--thumb-color': '#ff6b35' } as React.CSSProperties}
+              className="flex-1" />
+            <span className="font-pixel text-[7px] text-retro-white/40">MAX</span>
           </div>
-          <p className="font-pixel text-lg text-retro-orange text-center mt-2">{force}%</p>
-          <p className="font-pixel text-[6px] text-white/40 text-center mt-1">
+          <p className="font-pixel text-xl text-retro-orange glow-text text-center mt-1">{force}%</p>
+          <p className="font-pixel text-[5px] text-retro-white/30 text-center mt-1">
             v₀ = {(5 + (force / 100) * 25).toFixed(1)} m/s
           </p>
+          <div className="mt-2 stat-bar h-2">
+            <div className="stat-bar-fill transition-all duration-200"
+              style={{ width: `${force}%`, background: '#ff6b35' }} />
+          </div>
+          <p className="font-pixel text-[5px] text-center mt-1 text-retro-white/30">POWER OUTPUT</p>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="pixel-card mb-8">
-        <h3 className="font-pixel text-[10px] text-retro-cyan mb-3">Projected Results</h3>
+      <div className="pixel-card mb-6">
+        <p className="section-title mb-3">PROJECTED RESULTS</p>
         <div className="grid grid-cols-4 gap-4 text-center">
-          <div>
-            <p className="font-pixel text-[6px] text-white/50">Distance</p>
-            <p className="font-pixel text-sm text-retro-yellow">{traj.maxDist.toFixed(1)}m</p>
-          </div>
-          <div>
-            <p className="font-pixel text-[6px] text-white/50">Max Height</p>
-            <p className="font-pixel text-sm text-retro-green">{traj.maxHeight.toFixed(1)}m</p>
-          </div>
-          <div>
-            <p className="font-pixel text-[6px] text-white/50">Air Time</p>
-            <p className="font-pixel text-sm text-retro-cyan">{traj.totalTime.toFixed(2)}s</p>
-          </div>
-          <div>
-            <p className="font-pixel text-[6px] text-white/50">Head Start</p>
-            <p className="font-pixel text-sm text-retro-pink">{(traj.maxDist * 0.15).toFixed(2)}s</p>
-          </div>
+          {[
+            { label: 'DISTANCE',   value: traj.dist.toFixed(1) + 'm',  color: '#ffd700' },
+            { label: 'MAX HEIGHT', value: traj.height.toFixed(1) + 'm', color: '#39ff14' },
+            { label: 'AIR TIME',   value: traj.tFly.toFixed(2) + 's',  color: '#00d4ff' },
+            { label: 'HEAD START', value: (traj.dist * 0.15).toFixed(2) + 's', color: '#ff3366' },
+          ].map(s => (
+            <div key={s.label}>
+              <p className="font-pixel text-[5px] text-retro-white/40 mb-1">{s.label}</p>
+              <p className="font-pixel text-sm glow-text" style={{ color: s.color }}>{s.value}</p>
+            </div>
+          ))}
         </div>
-        <p className="font-pixel text-[6px] text-white/30 text-center mt-3">
-          R = v₀²·sin(2θ) / g | H = v₀²·sin²(θ) / 2g | T = 2·v₀·sin(θ) / g
+        <p className="font-pixel text-[5px] text-retro-white/20 text-center mt-3">
+          R = v₀²·sin(2θ)/g &nbsp;|&nbsp; H = v₀²·sin²(θ)/2g &nbsp;|&nbsp; T = 2·v₀·sin(θ)/g
         </p>
       </div>
 
       <div className="text-center">
-        <button
-          onClick={handleReady}
-          disabled={isReady}
-          className={`pixel-btn ${isReady ? 'bg-gray-600 text-gray-400' : 'bg-retro-green text-black'}`}
-        >
-          {isReady ? 'Waiting for others...' : 'Launch!'}
+        <button onClick={handleReady} disabled={!!isReady}
+          className={isReady ? 'btn-ghost px-10 py-3' : 'btn-green px-10 py-3 text-sm'}>
+          {isReady ? 'WAITING FOR OTHERS...' : 'LAUNCH!'}
         </button>
       </div>
     </div>
