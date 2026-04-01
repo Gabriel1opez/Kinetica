@@ -45,11 +45,11 @@ const MUSCLES = [
     key:    'upperBody',
     label:  'UPPR',
     full:   'Upper Body',
-    func:   'Arm propulsion',
-    effect: 'Swim Speed',
+    func:   'Arm drive',
+    effect: 'Top Speed',
     color:  '#cc88ff',
-    game:   'Swim section advantage',
-    science: 'Deltoids and latissimus dorsi provide propulsive force in aquatic environments. Drag force (Fd = ½ρv²CdA) is overcome by trained upper body.',
+    game:   'Higher max speed at full sprint',
+    science: 'Deltoids and latissimus dorsi drive arm swing during sprinting. Arm momentum contributes up to 10% of forward propulsion via Newton\'s Third Law.',
   },
 ];
 

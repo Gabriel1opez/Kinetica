@@ -245,9 +245,10 @@ export class GameManager {
       }
     } else if (currentIdx < phaseOrder.length - 1) {
       room.phase = phaseOrder[currentIdx + 1];
-      // Reset player turn index when entering racing phase
+      // When entering racing, reset ready states (used to track who finished)
       if (room.phase === 'racing') {
         room.currentPlayerIndex = 0;
+        room.players.forEach(p => p.isReady = false);
       }
     }
 

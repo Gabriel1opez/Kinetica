@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 
 const AVATARS = [
-  { label: 'RUN', color: '#ff3366', bg: 'rgba(255,51,102,0.15)' },
-  { label: 'LFT', color: '#ffd700', bg: 'rgba(255,215,0,0.15)' },
-  { label: 'ACR', color: '#39ff14', bg: 'rgba(57,255,20,0.15)' },
-  { label: 'SWM', color: '#00d4ff', bg: 'rgba(0,212,255,0.15)' },
-  { label: 'ZAP', color: '#ff6b35', bg: 'rgba(255,107,53,0.15)' },
-  { label: 'SCI', color: '#cc88ff', bg: 'rgba(204,136,255,0.15)' },
-  { label: 'ALC', color: '#e91e8c', bg: 'rgba(233,30,140,0.15)' },
-  { label: 'RKT', color: '#00ffdd', bg: 'rgba(0,255,221,0.15)' },
+  { label: 'P1', color: '#ff3366', bg: 'rgba(255,51,102,0.15)' },
+  { label: 'P2', color: '#ffd700', bg: 'rgba(255,215,0,0.15)' },
+  { label: 'P3', color: '#39ff14', bg: 'rgba(57,255,20,0.15)' },
+  { label: 'P4', color: '#00d4ff', bg: 'rgba(0,212,255,0.15)' },
+  { label: 'P5', color: '#ff6b35', bg: 'rgba(255,107,53,0.15)' },
+  { label: 'P6', color: '#cc88ff', bg: 'rgba(204,136,255,0.15)' },
+  { label: 'P7', color: '#e91e8c', bg: 'rgba(233,30,140,0.15)' },
+  { label: 'P8', color: '#00ffdd', bg: 'rgba(0,255,221,0.15)' },
 ];
 
 interface Props {
@@ -216,7 +216,7 @@ export default function MainMenu({ socket, onJoined }: Props) {
         {/* Avatar */}
         <div>
           <label className="font-retro text-lg text-retro-cyan block mb-2">
-            CHOOSE CLASS
+            CHOOSE COLOR
           </label>
           <div className="grid grid-cols-4 gap-2">
             {AVATARS.map((av, i) => (

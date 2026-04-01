@@ -1,8 +1,8 @@
 const AVATARS = [
-  { label: 'RUN', color: '#ff3366' }, { label: 'LFT', color: '#ffd700' },
-  { label: 'ACR', color: '#39ff14' }, { label: 'SWM', color: '#00d4ff' },
-  { label: 'ZAP', color: '#ff6b35' }, { label: 'SCI', color: '#cc88ff' },
-  { label: 'ALC', color: '#e91e8c' }, { label: 'RKT', color: '#00ffdd' },
+  { label: 'P1', color: '#ff3366' }, { label: 'P2', color: '#ffd700' },
+  { label: 'P3', color: '#39ff14' }, { label: 'P4', color: '#00d4ff' },
+  { label: 'P5', color: '#ff6b35' }, { label: 'P6', color: '#cc88ff' },
+  { label: 'P7', color: '#e91e8c' }, { label: 'P8', color: '#00ffdd' },
 ];
 
 const PLANET_DISPLAY: Record<string, { label: string; color: string }> = {

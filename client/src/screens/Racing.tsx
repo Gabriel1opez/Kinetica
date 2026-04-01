@@ -267,8 +267,7 @@ interface Props { socket: any; }
 export default function Racing({ socket }: Props) {
   const room         = socket.roomState;
   const me           = room?.players.find((p: any) => p.id === socket.playerId);
-  const currentPlayer = room?.players.find((p: any) => p.id === room.currentPlayerId);
-  const isMyTurn     = room?.currentPlayerId === socket.playerId;
+  const otherPlayerPositions = socket.otherPlayers || {};
   const planetKey    = room?.currentPlanet || 'earth';
   const colors       = PLANET_COLORS[planetKey] || PLANET_COLORS.earth;
   const level        = LEVELS[planetKey] || LEVELS.earth;
@@ -915,6 +914,11 @@ export default function Racing({ socket }: Props) {
       // ── Elapsed time ─────────────────────────────────────────────────────
       p.elapsed = (performance.now() - p.startTime) / 1000;
 
+      // ── Broadcast position to other players (every ~5 frames) ────────
+      if (Math.random() < 0.2) {
+        socket.sendPosition({ x: p.worldX, y: p.worldY, state: p.state, facing: p.facing });
+      }
+
       // ── Check finish ──────────────────────────────────────────────────────
       if (p.worldX >= level.finishX && statusRef.current === 'playing' && !p.finishSent) {
         p.finishSent = true;
@@ -1254,7 +1258,37 @@ export default function Racing({ socket }: Props) {
         ctx.restore();
       }
 
-      // ── Player sprite ─────────────────────────────────────────────────
+      // ── Other players (ghost sprites) ─────────────────────────────────
+      for (const [pid, other] of Object.entries(otherPlayerPositions)) {
+        const ox = other.x - camX;
+        const oy = other.y;
+        if (ox < -100 || ox > CW + 100) continue;
+
+        // Semi-transparent ghost rendering
+        ctx.save();
+        ctx.globalAlpha = 0.5;
+        ctx.translate(ox, oy);
+        if (other.facing === -1) ctx.scale(-1, 1);
+
+        const otherFrames = sp[other.state as 'idle'|'run'|'jump'|'die'] || sp.run;
+        const otherFrame = otherFrames[Math.floor(Date.now() / 100) % otherFrames.length];
+        if (otherFrame) {
+          ctx.drawImage(otherFrame, -SPRITE_W / 2, -SPRITE_H, SPRITE_W, SPRITE_H);
+        }
+        ctx.restore();
+
+        // Name tag above ghost
+        ctx.save();
+        ctx.globalAlpha = 0.4;
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '7px "Silkscreen"';
+        ctx.textAlign = 'center';
+        const playerData = room?.players?.find((pl: any) => pl.id === pid);
+        ctx.fillText((playerData?.name || 'PLAYER').toUpperCase(), ox, oy - SPRITE_H - 6);
+        ctx.restore();
+      }
+
+      // ── Player sprite (you) ───────────────────────────────────────────
       const pcx = p.worldX - camX;
       const pcy = p.worldY;
 
@@ -1449,89 +1483,9 @@ export default function Racing({ socket }: Props) {
   // sync statusRef when state changes
   useEffect(() => { statusRef.current = gameStatus; }, [gameStatus]);
 
-  // ── Spectator auto-play (draw loop when not my turn) ─────────────────────
-  const specCanvasRef = useRef<HTMLCanvasElement>(null);
-  const specFrameRef  = useRef(0);
-  const specXRef      = useRef(100);
-  const specTickRef   = useRef(0);
-
-  useEffect(() => {
-    if (isMyTurn || !spritesReady) return;
-    const canvas = specCanvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d')!;
-    let raf = 0;
-
-    const run = () => {
-      ctx.clearRect(0, 0, CW, CH);
-      const skyGrad = ctx.createLinearGradient(0, 0, 0, CH);
-      skyGrad.addColorStop(0, colors.sky1);
-      skyGrad.addColorStop(1, colors.sky2);
-      ctx.fillStyle = skyGrad;
-      ctx.fillRect(0, 0, CW, CH);
-
-      // Ground
-      ctx.fillStyle = colors.ground;
-      ctx.fillRect(0, GROUND_Y, CW, CH - GROUND_Y);
-      ctx.save();
-      ctx.shadowColor = colors.platform;
-      ctx.shadowBlur  = 6;
-      ctx.fillStyle   = colors.platform;
-      ctx.fillRect(0, GROUND_Y, CW, 2);
-      ctx.restore();
-
-      // Spectator character
-      specTickRef.current++;
-      if (specTickRef.current >= 4) {
-        specTickRef.current = 0;
-        specFrameRef.current = (specFrameRef.current + 1) % sprites.current.run.length;
-      }
-      specXRef.current = (specXRef.current + 2.5) % (CW + 100);
-      const runFrame = sprites.current.run[specFrameRef.current];
-      if (runFrame) {
-        ctx.drawImage(runFrame, specXRef.current - SPRITE_W / 2, GROUND_Y - SPRITE_H, SPRITE_W, SPRITE_H);
-      }
-
-      // Label
-      ctx.fillStyle = '#ffffff66';
-      ctx.font = '9px "Silkscreen"';
-      ctx.textAlign = 'center';
-      ctx.fillText((currentPlayer?.name || 'OPPONENT').toUpperCase() + ' IS RACING...', CW / 2, CH / 2);
-
-      raf = requestAnimationFrame(run);
-    };
-    raf = requestAnimationFrame(run);
-    return () => cancelAnimationFrame(raf);
-  }, [isMyTurn, spritesReady, colors, planetKey, currentPlayer]);
-
   // ─────────────────────────────────────────────────────────────────────────
-  // RENDER
+  // RENDER — all players race simultaneously
   // ─────────────────────────────────────────────────────────────────────────
-  if (!isMyTurn) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-4">
-        <div className="mb-4">
-          <p className="font-pixel text-xs text-retro-white/60 text-center mb-1">SPECTATING</p>
-          <p className="font-pixel text-sm text-retro-cyan glow-text-cyan text-center animate-pixel-pulse">
-            {(currentPlayer?.name || 'Opponent').toUpperCase()} IS RACING
-          </p>
-        </div>
-        <div className="pixel-card w-full max-w-3xl overflow-hidden">
-          <canvas
-            ref={specCanvasRef}
-            width={CW}
-            height={CH}
-            className="w-full"
-            style={{ imageRendering: 'pixelated' }}
-          />
-        </div>
-        <p className="font-retro text-lg text-retro-white/30 mt-4">
-          {PLANET_LABELS[planetKey]} — YOUR TURN WILL COME
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen flex flex-col items-center px-2 py-4">
       {/* Header */}

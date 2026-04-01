@@ -94,38 +94,55 @@ io.on('connection', (socket) => {
   // RUN RACE (server-side science simulation — called at START of race)
   socket.on('race:run', (_, callback) => {
     const result = gameManager.runRace(socket.id);
-    // Just return the science simulation result — do NOT advance turn
-    // The client will send race:finish when the platformer is complete
     callback({ success: !!result, result });
+  });
+
+  // PLAYER POSITION UPDATE (broadcast to all other players in room)
+  socket.on('race:position', (data: { x: number; y: number; state: string; facing: number }) => {
+    const room = gameManager.getRoomForPlayer(socket.id);
+    if (room) {
+      socket.to(room.code).emit('race:player-position', {
+        playerId: socket.id,
+        ...data,
+      });
+    }
   });
 
   // FINISH RACE (called when player finishes the platformer or times out)
   socket.on('race:finish', ({ platformTime }, callback) => {
     const room = gameManager.getRoomForPlayer(socket.id);
     if (room) {
-      // Override the server-calculated time with the actual platform time
       const player = room.players.get(socket.id);
-      if (player && player.raceResults.length > 0) {
-        const lastResult = player.raceResults[player.raceResults.length - 1];
-        // Recalculate total time using platform time
-        player.totalTime -= lastResult.totalTime;
-        lastResult.totalTime = platformTime;
-        player.totalTime += platformTime;
+      if (player) {
+        // Store platform time as the race result
+        if (player.raceResults.length > 0) {
+          const lastResult = player.raceResults[player.raceResults.length - 1];
+          player.totalTime -= lastResult.totalTime;
+          lastResult.totalTime = platformTime;
+          player.totalTime += platformTime;
+        }
+        player.isReady = true; // Mark as finished
       }
 
-      // Broadcast that this player finished
+      // Broadcast finish to all players
       io.to(room.code).emit('race:player-finished', {
         playerId: socket.id,
         platformTime,
       });
 
-      // Emit updated state so leaderboard reflects platform times
       gameManager.emitRoomState(room);
 
-      // Advance to next player's turn
-      setTimeout(() => {
-        if (room) gameManager.nextTurn(room);
-      }, 3000);
+      // Check if ALL players have finished
+      const allFinished = Array.from(room.players.values()).every(p => p.isReady);
+      if (allFinished) {
+        // All done — advance to results after short delay
+        setTimeout(() => {
+          room.players.forEach(p => p.isReady = false);
+          room.phase = 'results';
+          io.to(room.code).emit('game:phase-change', { phase: 'results', planet: room.currentPlanet });
+          gameManager.emitRoomState(room);
+        }, 2000);
+      }
     }
     callback({ success: true });
   });

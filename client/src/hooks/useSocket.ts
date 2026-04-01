@@ -27,6 +27,7 @@ export function useSocket() {
   const [roomState, setRoomState] = useState<RoomState | null>(null);
   const [playerId, setPlayerId] = useState<string>('');
   const [raceResult, setRaceResult] = useState<any>(null);
+  const [otherPlayers, setOtherPlayers] = useState<Record<string, { x: number; y: number; state: string; facing: number; name: string; avatar: number }>>({});
 
   useEffect(() => {
     const serverUrl = import.meta.env.VITE_SERVER_URL ||
@@ -67,6 +68,13 @@ export function useSocket() {
 
     socket.on('race:player-finished', (data: { playerId: string; platformTime: number }) => {
       setRaceResult(data);
+    });
+
+    socket.on('race:player-position', (data: { playerId: string; x: number; y: number; state: string; facing: number }) => {
+      setOtherPlayers(prev => ({
+        ...prev,
+        [data.playerId]: { x: data.x, y: data.y, state: data.state, facing: data.facing, name: '', avatar: 0 },
+      }));
     });
 
     return () => {
@@ -118,6 +126,10 @@ export function useSocket() {
     });
   }, []);
 
+  const sendPosition = useCallback((data: { x: number; y: number; state: string; facing: number }) => {
+    socketRef.current?.emit('race:position', data);
+  }, []);
+
   const advance = useCallback(() => {
     socketRef.current?.emit('game:advance');
   }, []);
@@ -135,6 +147,8 @@ export function useSocket() {
     setReady,
     runRace,
     finishRace,
+    sendPosition,
+    otherPlayers,
     advance,
     setRaceResult,
   };
