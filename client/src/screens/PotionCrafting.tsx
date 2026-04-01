@@ -86,7 +86,7 @@ export default function PotionCrafting({ socket }: Props) {
     <div className="min-h-screen px-4 py-8 max-w-5xl mx-auto animate-fade-in">
       <div className="text-center mb-6">
         <h2 className="font-pixel text-lg text-retro-yellow glow-text-gold mb-1">POTION LAB</h2>
-        <p className="font-pixel text-[7px] text-retro-cyan/60 tracking-widest">CHEMISTRY — COMBINE ELEMENTS TO BREW PERFORMANCE POTIONS</p>
+        <p className="font-retro text-lg text-retro-cyan/60 tracking-widest">CHEMISTRY — COMBINE ELEMENTS TO BREW PERFORMANCE POTIONS</p>
       </div>
 
       <div className="grid md:grid-cols-3 gap-5">
@@ -98,7 +98,7 @@ export default function PotionCrafting({ socket }: Props) {
             {Object.entries(CAT_COLORS).map(([cat, color]) => (
               <div key={cat} className="flex items-center gap-1">
                 <div className="w-2 h-2" style={{ background: color }} />
-                <span className="font-pixel text-[5px] text-retro-white/50">{cat.toUpperCase()}</span>
+                <span className="font-retro text-base text-retro-white/50">{cat.toUpperCase()}</span>
               </div>
             ))}
           </div>
@@ -115,10 +115,10 @@ export default function PotionCrafting({ socket }: Props) {
                     boxShadow:   isSel ? `0 0 10px ${el.color}55` : 'none',
                     transform:   isSel ? 'scale(1.08)' : 'scale(1)',
                   }}>
-                  <span className="font-pixel text-[7px] block leading-tight" style={{ color: el.color }}>
+                  <span className="font-retro text-lg block leading-tight" style={{ color: el.color }}>
                     {el.symbol}
                   </span>
-                  <span className="font-pixel text-[4px] text-retro-white/35 mt-0.5 leading-tight block">
+                  <span className="font-retro text-base text-retro-white/35 mt-0.5 leading-tight block">
                     {el.name}
                   </span>
                 </button>
@@ -139,12 +139,12 @@ export default function PotionCrafting({ socket }: Props) {
                 <div key={i} className="flex items-center gap-2">
                   {i === 1 && <span className="font-pixel text-retro-yellow text-sm">+</span>}
                   {el ? (
-                    <div className="px-2 py-1 border font-pixel text-[9px]"
+                    <div className="px-2 py-1 border font-retro text-xl"
                       style={{ borderColor: el.color, background: `${el.color}18`, color: el.color }}>
                       {el.symbol}
                     </div>
                   ) : (
-                    <div className="px-3 py-1 border border-retro-border font-pixel text-[8px] text-retro-white/20">
+                    <div className="px-3 py-1 border border-retro-border font-retro text-lg text-retro-white/20">
                       ?
                     </div>
                   )}
@@ -158,12 +158,12 @@ export default function PotionCrafting({ socket }: Props) {
                 <div className="stat-bar mb-1">
                   <div className="stat-bar-fill transition-none" style={{ width: `${rxProgress}%`, background: '#e91e8c', boxShadow: '0 0 8px #e91e8c' }} />
                 </div>
-                <p className="font-pixel text-[7px] text-retro-magenta animate-blink">REACTING...</p>
+                <p className="font-retro text-lg text-retro-magenta animate-blink">REACTING...</p>
               </div>
             )}
 
             {message && (
-              <p className={`font-pixel text-[7px] mb-2 ${msgType === 'ok' ? 'text-retro-green' : 'text-retro-red'}`}>
+              <p className={`font-retro text-lg mb-2 ${msgType === 'ok' ? 'text-retro-green' : 'text-retro-red'}`}>
                 {message}
               </p>
             )}
@@ -179,22 +179,22 @@ export default function PotionCrafting({ socket }: Props) {
           <div className="pixel-card flex-1">
             <div className="flex items-baseline justify-between mb-2">
               <p className="section-title">POTIONS</p>
-              <p className="font-pixel text-[7px] text-retro-white/40">{crafted.length}/3</p>
+              <p className="font-retro text-lg text-retro-white/40">{crafted.length}/3</p>
             </div>
 
             {crafted.length === 0 ? (
-              <p className="font-pixel text-[6px] text-retro-white/30 text-center py-4">
+              <p className="font-retro text-base text-retro-white/30 text-center py-4">
                 NO POTIONS BREWED YET
               </p>
             ) : (
               <div className="space-y-2">
                 {crafted.map((p: any, i: number) => (
                   <div key={i} className="p-2 border" style={{ borderColor: p.color || '#00d4ff' }}>
-                    <p className="font-pixel text-[7px] mb-0.5" style={{ color: p.color || '#00d4ff' }}>
+                    <p className="font-retro text-lg mb-0.5" style={{ color: p.color || '#00d4ff' }}>
                       {p.name?.toUpperCase() || 'POTION'}
                     </p>
-                    <p className="font-pixel text-[5px] text-retro-white/50 mb-0.5">{p.effect}</p>
-                    <p className="font-pixel text-[6px] text-retro-green">
+                    <p className="font-retro text-base text-retro-white/50 mb-0.5">{p.effect}</p>
+                    <p className="font-retro text-base text-retro-green">
                       +{p.magnitude} {p.stat?.replace(/_/g, ' ').toUpperCase()}
                     </p>
                   </div>

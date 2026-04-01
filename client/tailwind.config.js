@@ -5,6 +5,7 @@ export default {
     extend: {
       fontFamily: {
         pixel: ['"Press Start 2P"', 'monospace'],
+        retro: ['"VT323"', 'monospace'],
       },
       colors: {
         retro: {

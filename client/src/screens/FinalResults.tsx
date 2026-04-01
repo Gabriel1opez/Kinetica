@@ -117,7 +117,7 @@ export default function FinalResults({ socket, onBackToMenu }: Props) {
         <h2 className="font-pixel text-2xl text-retro-yellow glow-text-gold animate-neon-flicker">
           RACE COMPLETE
         </h2>
-        <p className="font-pixel text-[8px] text-retro-cyan mt-1 tracking-widest">
+        <p className="font-retro text-lg text-retro-cyan mt-1 tracking-widest">
           FINAL STANDINGS ACROSS ALL PLANETS
         </p>
       </div>
@@ -140,26 +140,26 @@ export default function FinalResults({ socket, onBackToMenu }: Props) {
                   boxShadow:   isWinner ? '0 0 20px rgba(255,215,0,0.15)' : isMe ? '0 0 12px rgba(0,212,255,0.1)' : undefined,
                 }}>
                 {/* Rank badge */}
-                <div className="w-12 h-12 flex items-center justify-center border font-pixel text-[7px] flex-shrink-0"
+                <div className="w-12 h-12 flex items-center justify-center border font-retro text-lg flex-shrink-0"
                   style={{ borderColor: rankCol, color: rankCol, background: `${rankCol}18`,
                            boxShadow: i < 3 ? `0 0 10px ${rankCol}44` : undefined }}>
                   {RANK_LABELS[i] || `#${i+1}`}
                 </div>
                 {/* Avatar */}
-                <div className="w-10 h-10 flex items-center justify-center border font-pixel text-[7px] flex-shrink-0"
+                <div className="w-10 h-10 flex items-center justify-center border font-retro text-lg flex-shrink-0"
                   style={{ borderColor: av.color, color: av.color, background: `${av.color}18` }}>
                   {av.label}
                 </div>
                 {/* Name + per-planet */}
                 <div className="flex-1 min-w-0">
-                  <p className="font-pixel text-[10px] text-retro-white">
+                  <p className="font-retro text-xl text-retro-white">
                     {player.name}{isMe ? ' [YOU]' : ''}
                   </p>
                   <div className="flex gap-3 mt-1 flex-wrap">
                     {player.raceResults?.map((r: any, j: number) => {
                       const pd = PLANET_DISPLAY[r.planet] || { label: r.planet, color: '#ffffff' };
                       return (
-                        <span key={j} className="font-pixel text-[7px]" style={{ color: pd.color + 'aa' }}>
+                        <span key={j} className="font-retro text-lg" style={{ color: pd.color + 'aa' }}>
                           {pd.label}: {r.totalTime.toFixed(1)}s
                         </span>
                       );
@@ -171,7 +171,7 @@ export default function FinalResults({ socket, onBackToMenu }: Props) {
                   <p className="font-pixel text-xl glow-text-gold text-retro-yellow">
                     {player.totalTime.toFixed(2)}s
                   </p>
-                  <p className="font-pixel text-[7px] text-retro-white/30">TOTAL</p>
+                  <p className="font-retro text-lg text-retro-white/30">TOTAL</p>
                 </div>
               </div>
             );
@@ -191,12 +191,12 @@ export default function FinalResults({ socket, onBackToMenu }: Props) {
             const pd = PLANET_DISPLAY[pk];
             return (
               <div key={pk} className="mb-4">
-                <p className="font-pixel text-[8px] mb-2" style={{ color: pd.color }}>{pd.label}</p>
+                <p className="font-retro text-lg mb-2" style={{ color: pd.color }}>{pd.label}</p>
                 <div className="space-y-1">
                   {pf.map((f: any, i: number) => (
                     <div key={i} className="p-2 border border-retro-border bg-black/20 flex gap-2">
-                      <span className="font-pixel text-[8px] text-retro-cyan flex-shrink-0">&gt;</span>
-                      <p className="font-pixel text-[7px] text-retro-white/70 leading-relaxed">{f.text}</p>
+                      <span className="font-retro text-lg text-retro-cyan flex-shrink-0">&gt;</span>
+                      <p className="font-retro text-lg text-retro-white/70 leading-relaxed">{f.text}</p>
                     </div>
                   ))}
                 </div>
@@ -206,7 +206,7 @@ export default function FinalResults({ socket, onBackToMenu }: Props) {
 
           {/* Science concepts */}
           <div className="mt-4 p-3 border border-retro-border/50 bg-retro-cyan/5">
-            <p className="font-pixel text-[7px] text-retro-cyan mb-3">KEY CONCEPTS APPLIED</p>
+            <p className="font-pixel text-sm text-retro-cyan mb-3">KEY CONCEPTS APPLIED</p>
             <div className="grid md:grid-cols-3 gap-4">
               {[
                 {
@@ -244,9 +244,9 @@ export default function FinalResults({ socket, onBackToMenu }: Props) {
                 },
               ].map(s => (
                 <div key={s.label}>
-                  <p className="font-pixel text-[8px] mb-2" style={{ color: s.color }}>{s.label}</p>
+                  <p className="font-pixel text-sm mb-2" style={{ color: s.color }}>{s.label}</p>
                   {s.items.map((item, i) => (
-                    <p key={i} className="font-pixel text-[7px] text-retro-white/50 mb-1">- {item}</p>
+                    <p key={i} className="font-retro text-lg text-retro-white/50 mb-1">- {item}</p>
                   ))}
                 </div>
               ))}

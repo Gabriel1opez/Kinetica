@@ -160,7 +160,7 @@ export default function MainMenu({ socket, onJoined }: Props) {
         <p className="font-pixel text-[10px] text-retro-cyan mb-2 text-center tracking-[0.25em]">
           ENGINEERED TO WIN
         </p>
-        <p className="font-pixel text-[8px] text-retro-white/40 mb-10 text-center max-w-md leading-relaxed">
+        <p className="font-retro text-lg text-retro-white/40 mb-10 text-center max-w-md leading-relaxed">
           AN 8-BIT MULTIPLAYER SCIENCE RACING GAME<br/>
           SPORTS MEDICINE &bull; CHEMISTRY &bull; PHYSICS
         </p>
@@ -176,7 +176,7 @@ export default function MainMenu({ socket, onJoined }: Props) {
         </div>
 
         {/* Connection */}
-        <div className="mt-10 font-pixel text-[7px] flex items-center gap-2">
+        <div className="mt-10 font-retro text-lg flex items-center gap-2">
           <span className={`inline-block w-2 h-2 ${socket.connected ? 'bg-retro-green' : 'bg-retro-red'}`}
             style={{ boxShadow: socket.connected ? '0 0 6px #39ff14' : '0 0 6px #ff073a' }} />
           <span className="text-retro-white/30">
@@ -190,7 +190,7 @@ export default function MainMenu({ socket, onJoined }: Props) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 animate-fade-in">
       <button onClick={() => { setMode('home'); setError(''); }}
-        className="font-pixel text-[9px] text-retro-cyan hover:text-retro-white transition-colors cursor-pointer mb-8">
+        className="font-retro text-xl text-retro-cyan hover:text-retro-white transition-colors cursor-pointer mb-8">
         &lt; BACK
       </button>
 
@@ -201,7 +201,7 @@ export default function MainMenu({ socket, onJoined }: Props) {
       <div className="pixel-card w-full max-w-md space-y-5">
         {/* Name */}
         <div>
-          <label className="font-pixel text-[8px] text-retro-cyan block mb-2">PLAYER NAME</label>
+          <label className="font-retro text-lg text-retro-cyan block mb-2">PLAYER NAME</label>
           <input
             type="text"
             value={name}
@@ -215,7 +215,7 @@ export default function MainMenu({ socket, onJoined }: Props) {
 
         {/* Avatar */}
         <div>
-          <label className="font-pixel text-[8px] text-retro-cyan block mb-2">
+          <label className="font-retro text-lg text-retro-cyan block mb-2">
             CHOOSE CLASS
           </label>
           <div className="grid grid-cols-4 gap-2">
@@ -238,7 +238,7 @@ export default function MainMenu({ socket, onJoined }: Props) {
         {/* Join code */}
         {mode === 'join' && (
           <div>
-            <label className="font-pixel text-[8px] text-retro-cyan block mb-2">ROOM CODE</label>
+            <label className="font-retro text-lg text-retro-cyan block mb-2">ROOM CODE</label>
             <input
               type="text"
               value={joinCode}
@@ -251,7 +251,7 @@ export default function MainMenu({ socket, onJoined }: Props) {
         )}
 
         {error && (
-          <p className="font-pixel text-[9px] text-retro-red text-center animate-shake">{error}</p>
+          <p className="font-retro text-xl text-retro-red text-center animate-shake">{error}</p>
         )}
 
         <button

@@ -23,18 +23,18 @@ export default function Lobby({ socket }: Props) {
 
       {/* Room code */}
       <div className="card-glow-cyan text-center mb-8 px-10 py-6">
-        <p className="font-pixel text-[8px] text-retro-cyan/60 mb-2 tracking-widest">ROOM CODE</p>
+        <p className="font-retro text-lg text-retro-cyan/60 mb-2 tracking-widest">ROOM CODE</p>
         <p className="font-pixel text-4xl text-retro-yellow glow-text-gold tracking-[0.35em] animate-neon-flicker">
           {room.code}
         </p>
-        <p className="font-pixel text-[7px] text-retro-white/30 mt-3">
+        <p className="font-retro text-lg text-retro-white/30 mt-3">
           SHARE WITH FRIENDS TO JOIN
         </p>
       </div>
 
       {/* Players */}
       <div className="w-full max-w-lg mb-8">
-        <p className="font-pixel text-[8px] text-retro-cyan text-center mb-3">
+        <p className="font-retro text-lg text-retro-cyan text-center mb-3">
           PLAYERS — {room.players.length} / 8
         </p>
         <div className="grid grid-cols-2 gap-3">
@@ -47,19 +47,19 @@ export default function Lobby({ socket }: Props) {
                 style={{ borderColor: isMe ? '#ffd700' : '#1e1e5e',
                          boxShadow: isMe ? '0 0 12px rgba(255,215,0,0.2)' : undefined }}>
                 {/* Avatar */}
-                <div className="w-9 h-9 flex items-center justify-center border font-pixel text-[7px] flex-shrink-0"
+                <div className="w-9 h-9 flex items-center justify-center border font-retro text-lg flex-shrink-0"
                   style={{ background: av.color + '22', borderColor: av.color, color: av.color,
                            boxShadow: `0 0 6px ${av.color}44` }}>
                   {av.label}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-pixel text-[9px] text-retro-white truncate">{player.name}</p>
+                  <p className="font-retro text-xl text-retro-white truncate">{player.name}</p>
                   <div className="flex gap-2 mt-0.5">
                     {player.isHost && (
-                      <span className="font-pixel text-[6px] text-retro-yellow">HOST</span>
+                      <span className="font-retro text-base text-retro-yellow">HOST</span>
                     )}
                     {player.isReady && (
-                      <span className="font-pixel text-[6px] text-retro-green">READY</span>
+                      <span className="font-retro text-base text-retro-green">READY</span>
                     )}
                   </div>
                 </div>
@@ -71,10 +71,10 @@ export default function Lobby({ socket }: Props) {
           {Array.from({ length: Math.max(0, 4 - room.players.length) }).map((_, i) => (
             <div key={`empty-${i}`} className="pixel-card flex items-center gap-3 opacity-20">
               <div className="w-9 h-9 border border-retro-border flex items-center justify-center
-                font-pixel text-[7px] text-retro-white/30">
+                font-retro text-lg text-retro-white/30">
                 ?
               </div>
-              <p className="font-pixel text-[8px] text-retro-white/30">WAITING...</p>
+              <p className="font-retro text-lg text-retro-white/30">WAITING...</p>
             </div>
           ))}
         </div>
@@ -82,34 +82,34 @@ export default function Lobby({ socket }: Props) {
 
       {/* How to Play */}
       <div className="pixel-card max-w-lg mb-8">
-        <p className="font-pixel text-[9px] text-retro-yellow mb-3 text-center">HOW TO PLAY</p>
+        <p className="font-pixel text-sm text-retro-yellow mb-3 text-center">HOW TO PLAY</p>
         <div className="space-y-2">
           <div className="flex gap-2">
-            <span className="font-pixel text-[9px] text-retro-pink flex-shrink-0">1.</span>
-            <p className="font-pixel text-[8px] text-retro-white/70 leading-relaxed">
+            <span className="font-retro text-xl text-retro-pink flex-shrink-0">1.</span>
+            <p className="font-retro text-lg text-retro-white/70 leading-relaxed">
               CONFIGURE your athlete&apos;s muscles, energy systems, and body mass using real sports science
             </p>
           </div>
           <div className="flex gap-2">
-            <span className="font-pixel text-[9px] text-retro-cyan flex-shrink-0">2.</span>
-            <p className="font-pixel text-[8px] text-retro-white/70 leading-relaxed">
+            <span className="font-retro text-xl text-retro-cyan flex-shrink-0">2.</span>
+            <p className="font-retro text-lg text-retro-white/70 leading-relaxed">
               BREW potions in the chemistry lab by combining real biochemical elements
             </p>
           </div>
           <div className="flex gap-2">
-            <span className="font-pixel text-[9px] text-retro-yellow flex-shrink-0">3.</span>
-            <p className="font-pixel text-[8px] text-retro-white/70 leading-relaxed">
+            <span className="font-retro text-xl text-retro-yellow flex-shrink-0">3.</span>
+            <p className="font-retro text-lg text-retro-white/70 leading-relaxed">
               LAUNCH your athlete with a catapult &mdash; angle and force follow projectile motion physics (R = v&sup2;sin(2&theta;)/g)
             </p>
           </div>
           <div className="flex gap-2">
-            <span className="font-pixel text-[9px] text-retro-green flex-shrink-0">4.</span>
-            <p className="font-pixel text-[8px] text-retro-white/70 leading-relaxed">
+            <span className="font-retro text-xl text-retro-green flex-shrink-0">4.</span>
+            <p className="font-retro text-lg text-retro-white/70 leading-relaxed">
               RACE across 5 science zones on Earth, Mars, and Mercury &mdash; your choices determine performance!
             </p>
           </div>
         </div>
-        <p className="font-pixel text-[8px] text-retro-white/40 mt-3 text-center">
+        <p className="font-retro text-lg text-retro-white/40 mt-3 text-center">
           CONTROLS: ARROW KEYS or WASD to move &bull; SPACE to jump
         </p>
       </div>
@@ -120,7 +120,7 @@ export default function Lobby({ socket }: Props) {
           START GAME
         </button>
       ) : (
-        <p className="font-pixel text-[9px] text-retro-white/40 animate-blink">
+        <p className="font-retro text-xl text-retro-white/40 animate-blink">
           WAITING FOR HOST TO START...
         </p>
       )}

@@ -65,7 +65,7 @@ export default function CatapultLaunch({ socket }: Props) {
     const coords = getCanvasCoords(e);
     // Check if click is near the runner/bucket area at the tip of the arm
     const armRad = (angle * Math.PI) / 180;
-    const tipX = CATAPULT_X + Math.cos(armRad) * ARM_LENGTH;
+    const tipX = CATAPULT_X - Math.cos(armRad) * ARM_LENGTH;
     const tipY = GROUND_Y - 34 - Math.sin(armRad) * ARM_LENGTH;
     const dx = coords.x - tipX;
     const dy = coords.y - tipY;
@@ -83,8 +83,8 @@ export default function CatapultLaunch({ socket }: Props) {
     setDragCurrent(coords);
 
     if (dragStart) {
-      // Drag backward (left) = more force, drag direction = angle
-      const dx = dragStart.x - coords.x; // positive when dragging left
+      // Drag backward (further left) = more force, drag upward = higher angle
+      const dx = dragStart.x - coords.x; // positive when dragging left (pulling back)
       const dy = dragStart.y - coords.y; // positive when dragging up
 
       // Force from distance (clamped)
@@ -283,11 +283,12 @@ export default function CatapultLaunch({ socket }: Props) {
     px(pivotX - 3, pivotY - 3, 6, 6, '#8888aa'); // pivot metal piece
     px(pivotX - 2, pivotY - 2, 4, 4, '#aaaacc'); // pivot highlight
 
-    // Rotating arm
+    // Rotating arm — arm tip (bucket with runner) is pulled BACK (left)
+    // Counterweight is on the RIGHT — on release, arm swings right to launch
     const armRad = (angle * Math.PI) / 180;
-    const tipX = pivotX + Math.cos(armRad) * ARM_LENGTH;
+    const tipX = pivotX - Math.cos(armRad) * ARM_LENGTH;   // LEFT (pulled back)
     const tipY = pivotY - Math.sin(armRad) * ARM_LENGTH;
-    const counterX = pivotX - Math.cos(armRad) * 18;
+    const counterX = pivotX + Math.cos(armRad) * 18;       // RIGHT (counterweight)
     const counterY = pivotY + Math.sin(armRad) * 18;
 
     ctx.save();
@@ -480,13 +481,13 @@ export default function CatapultLaunch({ socket }: Props) {
     ctx.lineWidth   = 1.5;
     ctx.setLineDash([2, 3]);
     ctx.beginPath();
-    ctx.arc(pivotX, pivotY, 24, -Math.PI, -(Math.PI) + armRad);
+    ctx.arc(pivotX, pivotY, 24, 0, -armRad, true);
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.fillStyle = planet.color;
     ctx.font      = '9px "Press Start 2P"';
-    ctx.textAlign = 'left';
-    ctx.fillText(`${angle}°`, pivotX + 28, pivotY - 8);
+    ctx.textAlign = 'right';
+    ctx.fillText(`${angle}°`, pivotX - 28, pivotY - 8);
     ctx.restore();
 
     // Drag hint text (when not dragging)
@@ -518,15 +519,15 @@ export default function CatapultLaunch({ socket }: Props) {
       {/* Header */}
       <div className="text-center mb-4">
         <h2 className="font-pixel text-lg text-retro-yellow glow-text-gold mb-1">CATAPULT LAUNCH</h2>
-        <p className="font-pixel text-[8px] text-retro-cyan/60 mb-2 tracking-widest">
+        <p className="font-retro text-lg text-retro-cyan/60 mb-2 tracking-widest">
           PHYSICS --- PROJECTILE MOTION
         </p>
-        <p className="font-pixel text-[10px] px-6 text-retro-white/50 leading-relaxed mb-2">
+        <p className="font-retro text-xl px-6 text-retro-white/50 leading-relaxed mb-2">
           Set your launch angle and power to get a head start.
           Your catapult launches you to the starting zone ---
           a perfect landing saves time!
         </p>
-        <p className="font-pixel text-[12px] mt-1" style={{ color: planet.color }}>
+        <p className="font-retro text-xl mt-1" style={{ color: planet.color }}>
           {planet.label} &nbsp;---&nbsp;
           <span className="text-retro-white/70">g = {planet.gravity} m/s&sup2;</span>
         </p>
@@ -556,12 +557,12 @@ export default function CatapultLaunch({ socket }: Props) {
         <div className="pixel-card">
           <p className="section-title">LAUNCH ANGLE (&theta;)</p>
           <div className="flex items-center gap-3 mb-1">
-            <span className="font-pixel text-[8px] text-retro-white/40">5&deg;</span>
+            <span className="font-retro text-lg text-retro-white/40">5&deg;</span>
             <input type="range" min={5} max={85} value={angle}
               onChange={e => setAngle(parseInt(e.target.value))}
               style={{ '--thumb-color': planet.color } as React.CSSProperties}
               className="flex-1" />
-            <span className="font-pixel text-[8px] text-retro-white/40">85&deg;</span>
+            <span className="font-retro text-lg text-retro-white/40">85&deg;</span>
           </div>
           <p className="font-pixel text-xl text-center mt-1 glow-text" style={{ color: planet.color }}>{angle}&deg;</p>
           <div className="mt-2 stat-bar h-2">
@@ -571,29 +572,29 @@ export default function CatapultLaunch({ socket }: Props) {
                 background: Math.abs(angle - 45) < 10 ? '#39ff14' : '#ffd700',
               }} />
           </div>
-          <p className="font-pixel text-[8px] text-center mt-1 text-retro-white/30">ANGLE EFFICIENCY</p>
+          <p className="font-retro text-lg text-center mt-1 text-retro-white/30">ANGLE EFFICIENCY</p>
         </div>
 
         {/* Force control */}
         <div className="pixel-card">
           <p className="section-title">LAUNCH FORCE</p>
           <div className="flex items-center gap-3 mb-1">
-            <span className="font-pixel text-[8px] text-retro-white/40">MIN</span>
+            <span className="font-retro text-lg text-retro-white/40">MIN</span>
             <input type="range" min={10} max={100} value={force}
               onChange={e => setForce(parseInt(e.target.value))}
               style={{ '--thumb-color': '#ff6b35' } as React.CSSProperties}
               className="flex-1" />
-            <span className="font-pixel text-[8px] text-retro-white/40">MAX</span>
+            <span className="font-retro text-lg text-retro-white/40">MAX</span>
           </div>
           <p className="font-pixel text-xl text-retro-orange glow-text text-center mt-1">{force}%</p>
-          <p className="font-pixel text-[10px] text-retro-white/40 text-center mt-1">
+          <p className="font-retro text-xl text-retro-white/40 text-center mt-1">
             v&#8320; = {v0.toFixed(1)} m/s
           </p>
           <div className="mt-2 stat-bar h-2">
             <div className="stat-bar-fill transition-all duration-200"
               style={{ width: `${force}%`, background: '#ff6b35' }} />
           </div>
-          <p className="font-pixel text-[8px] text-center mt-1 text-retro-white/30">POWER OUTPUT</p>
+          <p className="font-retro text-lg text-center mt-1 text-retro-white/30">POWER OUTPUT</p>
         </div>
 
         {/* Physics formulas (live) */}
@@ -601,32 +602,32 @@ export default function CatapultLaunch({ socket }: Props) {
           <p className="section-title">PHYSICS FORMULAS</p>
           <div className="space-y-2 mt-2">
             <div>
-              <p className="font-pixel text-[8px] text-retro-white/40">RANGE</p>
-              <p className="font-pixel text-[8px] text-retro-cyan/70">
+              <p className="font-retro text-lg text-retro-white/40">RANGE</p>
+              <p className="font-retro text-lg text-retro-cyan/70">
                 R = v&#8320;&sup2;&middot;sin(2&theta;)/g
               </p>
-              <p className="font-pixel text-[10px] text-retro-yellow glow-text">
+              <p className="font-retro text-xl text-retro-yellow glow-text">
                 = {v0.toFixed(1)}&sup2; &times; {Math.sin(2 * rad).toFixed(3)} / {g}
               </p>
-              <p className="font-pixel text-[12px] text-retro-yellow glow-text">
+              <p className="font-retro text-xl text-retro-yellow glow-text">
                 = {traj.dist.toFixed(1)}m
               </p>
             </div>
             <div>
-              <p className="font-pixel text-[8px] text-retro-white/40">MAX HEIGHT</p>
-              <p className="font-pixel text-[8px] text-retro-cyan/70">
+              <p className="font-retro text-lg text-retro-white/40">MAX HEIGHT</p>
+              <p className="font-retro text-lg text-retro-cyan/70">
                 H = v&#8320;&sup2;&middot;sin&sup2;(&theta;)/2g
               </p>
-              <p className="font-pixel text-[10px] text-green-400 glow-text">
+              <p className="font-retro text-xl text-green-400 glow-text">
                 = {traj.height.toFixed(1)}m
               </p>
             </div>
             <div>
-              <p className="font-pixel text-[8px] text-retro-white/40">FLIGHT TIME</p>
-              <p className="font-pixel text-[8px] text-retro-cyan/70">
+              <p className="font-retro text-lg text-retro-white/40">FLIGHT TIME</p>
+              <p className="font-retro text-lg text-retro-cyan/70">
                 T = 2&middot;v&#8320;&middot;sin(&theta;)/g
               </p>
-              <p className="font-pixel text-[10px] text-blue-400 glow-text">
+              <p className="font-retro text-xl text-blue-400 glow-text">
                 = {traj.tFly.toFixed(2)}s
               </p>
             </div>
@@ -645,7 +646,7 @@ export default function CatapultLaunch({ socket }: Props) {
             { label: 'HEAD START', value: (traj.dist * 0.15).toFixed(2) + 's', color: '#ff3366' },
           ].map(s => (
             <div key={s.label}>
-              <p className="font-pixel text-[8px] text-retro-white/40 mb-1">{s.label}</p>
+              <p className="font-retro text-lg text-retro-white/40 mb-1">{s.label}</p>
               <p className="font-pixel text-sm glow-text" style={{ color: s.color }}>{s.value}</p>
             </div>
           ))}
@@ -655,7 +656,7 @@ export default function CatapultLaunch({ socket }: Props) {
       {/* Planet gravity explanation */}
       <div className="pixel-card mb-5">
         <p className="section-title mb-2">GRAVITY EFFECT</p>
-        <p className="font-pixel text-[10px] text-retro-white/50 leading-relaxed">
+        <p className="font-retro text-xl text-retro-white/50 leading-relaxed">
           {room?.currentPlanet === 'mars' || room?.currentPlanet === 'mercury'
             ? `On ${planet.label}, gravity is only ${planet.gravity} m/s\u00B2 (vs Earth's 9.8). Lower gravity means the projectile stays airborne longer, traveling farther and reaching greater heights with the same launch speed.`
             : `On EARTH, gravity is ${planet.gravity} m/s\u00B2. This is the baseline. On planets with lower gravity (like Mars at 3.7), the same launch would travel much farther!`

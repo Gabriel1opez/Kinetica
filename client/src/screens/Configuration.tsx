@@ -115,15 +115,15 @@ export default function Configuration({ socket }: Props) {
       {/* Header */}
       <div className="text-center mb-6">
         <h2 className="font-pixel text-lg text-retro-yellow glow-text-gold mb-1">RUNNER CONFIG</h2>
-        <p className="font-pixel text-[9px] text-retro-cyan/60 tracking-widest">SPORTS MEDICINE & EXERCISE PHYSIOLOGY</p>
-        <p className="font-pixel text-[8px] text-retro-white/50 mt-2">Configure your athlete's physiology. Your choices directly affect race performance through real biomechanics.</p>
+        <p className="font-retro text-xl text-retro-cyan/60 tracking-widest">SPORTS MEDICINE & EXERCISE PHYSIOLOGY</p>
+        <p className="font-retro text-lg text-retro-white/50 mt-2">Configure your athlete's physiology. Your choices directly affect race performance through real biomechanics.</p>
       </div>
 
       {/* Muscle Selection */}
       <div className="pixel-card mb-5">
         <div className="flex items-baseline justify-between mb-1">
           <p className="section-title">MUSCLE TRAINING</p>
-          <p className="font-pixel text-[9px] text-retro-white/40">{selectedCount}/3 SELECTED</p>
+          <p className="font-retro text-xl text-retro-white/40">{selectedCount}/3 SELECTED</p>
         </div>
         <p className="section-subtitle">Select up to 3 muscle groups to enhance for the race</p>
 
@@ -143,14 +143,14 @@ export default function Configuration({ socket }: Props) {
                   transform:   selected ? 'scale(1.04)' : 'scale(1)',
                 }}>
                 {/* Icon block */}
-                <div className="w-8 h-8 mx-auto mb-2 flex items-center justify-center font-pixel text-[8px] border"
+                <div className="w-8 h-8 mx-auto mb-2 flex items-center justify-center font-retro text-lg border"
                   style={{ borderColor: m.color, background: `${m.color}22`, color: m.color }}>
                   {m.label}
                 </div>
-                <p className="font-pixel text-[9px] text-retro-white mb-1">{m.full}</p>
-                <p className="font-pixel text-[8px]" style={{ color: m.color }}>{m.func}</p>
-                <p className="font-pixel text-[7px] text-retro-white/40 mt-1">{m.game}</p>
-                {selected && <p className="font-pixel text-[7px] text-retro-white/50 mt-1 leading-tight">{m.science}</p>}
+                <p className="font-retro text-xl text-retro-white mb-1">{m.full}</p>
+                <p className="font-retro text-lg" style={{ color: m.color }}>{m.func}</p>
+                <p className="font-retro text-lg text-retro-white/40 mt-1">{m.game}</p>
+                {selected && <p className="font-retro text-lg text-retro-white/50 mt-1 leading-tight">{m.science}</p>}
               </button>
             );
           })}
@@ -170,8 +170,8 @@ export default function Configuration({ socket }: Props) {
           <div key={sys.key} className="mb-4">
             <div className="flex justify-between items-end mb-1">
               <div>
-                <span className="font-pixel text-[8px]" style={{ color: sys.color }}>{sys.label}</span>
-                <span className="font-pixel text-[8px] text-retro-white/40 ml-3">{sys.desc}</span>
+                <span className="font-retro text-lg" style={{ color: sys.color }}>{sys.label}</span>
+                <span className="font-retro text-lg text-retro-white/40 ml-3">{sys.desc}</span>
               </div>
               <span className="font-pixel text-[10px] text-retro-white">
                 {energy[sys.key as keyof typeof energy]}%
@@ -192,8 +192,8 @@ export default function Configuration({ socket }: Props) {
         ))}
 
         <div className="flex justify-between items-center">
-          <p className="font-pixel text-[6px] text-retro-white/30">TOTAL MUST EQUAL 100</p>
-          <p className={`font-pixel text-[8px] ${energy.atpPc + energy.anaerobic + energy.aerobic === 100 ? 'text-retro-green' : 'text-retro-red'}`}>
+          <p className="font-retro text-base text-retro-white/30">TOTAL MUST EQUAL 100</p>
+          <p className={`font-retro text-lg ${energy.atpPc + energy.anaerobic + energy.aerobic === 100 ? 'text-retro-green' : 'text-retro-red'}`}>
             {energy.atpPc + energy.anaerobic + energy.aerobic}/100
           </p>
         </div>
@@ -204,31 +204,31 @@ export default function Configuration({ socket }: Props) {
         <p className="section-title">BODY MASS</p>
         <p className="section-subtitle">Newton's Second Law: F = ma. Greater mass requires more force to accelerate but provides greater momentum (p = mv) for obstacle resistance.</p>
         <div className="flex items-center gap-3">
-          <span className="font-pixel text-[7px] text-retro-white/40">50kg</span>
+          <span className="font-retro text-lg text-retro-white/40">50kg</span>
           <input type="range" min={50} max={120} value={mass}
             onChange={e => setMass(parseInt(e.target.value))}
             style={{ '--thumb-color': '#00d4ff' } as React.CSSProperties}
             className="flex-1" />
-          <span className="font-pixel text-[7px] text-retro-white/40">120kg</span>
+          <span className="font-retro text-lg text-retro-white/40">120kg</span>
           <span className="font-pixel text-sm text-retro-cyan glow-text-cyan w-16 text-right">{mass}kg</span>
         </div>
       </div>
 
       {/* Preview stats */}
       <div className="pixel-card mb-8">
-        <p className="font-pixel text-[8px] text-retro-cyan mb-3">PERFORMANCE PREVIEW</p>
+        <p className="font-pixel text-sm text-retro-cyan mb-3">PERFORMANCE PREVIEW</p>
         <div className="grid grid-cols-4 gap-3">
           {stats.map(stat => {
             const pct   = Math.min(stat.val, 100);
             const color = pct > 70 ? '#39ff14' : pct > 50 ? '#ffd700' : '#ff073a';
             return (
               <div key={stat.label}>
-                <p className="font-pixel text-[6px] text-retro-white/50 mb-1">{stat.label}</p>
+                <p className="font-retro text-base text-retro-white/50 mb-1">{stat.label}</p>
                 <div className="stat-bar h-4">
                   <div className="stat-bar-fill transition-all duration-500"
                     style={{ width: `${pct}%`, background: color, boxShadow: `0 0 6px ${color}` }} />
                 </div>
-                <p className="font-pixel text-[6px] mt-1" style={{ color }}>{pct}%</p>
+                <p className="font-retro text-base mt-1" style={{ color }}>{pct}%</p>
               </div>
             );
           })}
@@ -237,7 +237,7 @@ export default function Configuration({ socket }: Props) {
 
       {/* Mass hint */}
       <div className="text-center mb-4">
-        <p className="font-pixel text-[6px] text-retro-white/30">
+        <p className="font-retro text-base text-retro-white/30">
           MASS: {mass}kg — {mass < 65 ? 'LIGHT: BETTER JUMPS' : mass > 90 ? 'HEAVY: MORE MOMENTUM' : 'BALANCED BUILD'}
         </p>
       </div>
@@ -248,7 +248,7 @@ export default function Configuration({ socket }: Props) {
           {isReady ? 'WAITING FOR OTHERS...' : 'LOCK IN CONFIG'}
         </button>
         {selectedCount < 1 && (
-          <p className="font-pixel text-[7px] text-retro-red mt-2">SELECT AT LEAST 1 MUSCLE GROUP</p>
+          <p className="font-retro text-lg text-retro-red mt-2">SELECT AT LEAST 1 MUSCLE GROUP</p>
         )}
       </div>
     </div>

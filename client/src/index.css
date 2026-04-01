@@ -9,10 +9,12 @@
   }
 
   body {
-    font-family: 'Press Start 2P', monospace;
+    font-family: 'VT323', monospace;
     background-color: #050514;
     color: #e8e8ff;
     overflow-x: hidden;
+    font-size: 18px;
+    letter-spacing: 0.03em;
   }
 
   ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -196,16 +198,16 @@
 
   /* ── Section divider ─────────────────────────── */
   .section-title {
-    @apply font-pixel text-xs text-retro-cyan glow-text-cyan mb-1;
+    @apply font-retro text-xl text-retro-cyan glow-text-cyan mb-1;
     letter-spacing: 0.1em;
   }
   .section-subtitle {
-    @apply font-pixel text-[8px] text-retro-white/50 mb-4;
+    @apply font-retro text-lg text-retro-white/50 mb-4;
   }
 
   /* ── Avatar badge ────────────────────────────── */
   .avatar-badge {
-    @apply w-10 h-10 flex items-center justify-center font-pixel text-[7px]
+    @apply w-10 h-10 flex items-center justify-center font-retro text-lg
            border-2 transition-all duration-100 cursor-pointer select-none;
   }
 

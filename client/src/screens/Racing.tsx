@@ -308,14 +308,17 @@ export default function Racing({ socket }: Props) {
     frame:   0,
     frameTick: 0,
     state:   'idle' as 'idle'|'run'|'jump'|'die',
-    health:  100,
+    health:  200,       // increased from 100 — more forgiving
+    maxHealth: 200,
     stamina: physics.startStamina,
     invincible: 0,
     alreadyJumped: false,
+    sprinting: false,
     lastSafeX: 150,
     startTime: 0,
     elapsed: 0,
     hits: 0,
+    dead: false,
     // explosion particles
     explosions: [] as { x: number; y: number; frame: number; timer: number }[],
   });
@@ -465,7 +468,7 @@ export default function Racing({ socket }: Props) {
   // ── Keyboard / Touch input ────────────────────────────────────────────────
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
-      if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space'].includes(e.code)) e.preventDefault();
+      if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space','ShiftLeft','ShiftRight'].includes(e.code)) e.preventDefault();
       keysRef.current.add(e.code);
       if (!e.repeat && (e.code === 'ArrowUp' || e.code === 'Space' || e.code === 'KeyW')) {
         jumpRef.current = true;
@@ -498,7 +501,8 @@ export default function Racing({ socket }: Props) {
     pRef.current.worldY = GROUND_Y;
     pRef.current.vx = 0;
     pRef.current.vy = 0;
-    pRef.current.health = 100;
+    pRef.current.health = 200;
+    pRef.current.dead = false;
     pRef.current.stamina = physics.startStamina;
     pRef.current.hits = 0;
     pRef.current.elapsed = 0;
@@ -597,8 +601,25 @@ export default function Racing({ socket }: Props) {
         sectionStaminaMod = aerobic > 50 ? 0.7 : 1.3; // High aerobic = less fatigue drain
       }
 
-      // Stamina-based speed penalty
-      const speedMult = (p.stamina < 25 ? 0.55 : p.stamina < 50 ? 0.78 : 1) * sectionSpeedMod;
+      // Dead check — if HP is 0, record 2 min time
+      if (p.dead) return;
+      if (p.health <= 0 && !p.dead) {
+        p.dead = true;
+        p.state = 'die';
+        statusRef.current = 'complete';
+        setGameStatus('complete');
+        socket.finishRace(120); // 2 minute penalty
+        return;
+      }
+
+      // Sprint detection (Shift key)
+      const wSprint = keys.has('ShiftLeft') || keys.has('ShiftRight');
+      p.sprinting = wSprint && p.stamina > 10;
+
+      // Stamina-based speed penalty + sprint bonus
+      const sprintMult = p.sprinting ? 1.6 : 1;
+      const staminaMult = p.stamina < 25 ? 0.55 : p.stamina < 50 ? 0.78 : 1;
+      const speedMult = staminaMult * sectionSpeedMod * sprintMult;
       const ms = physics.maxSpeed * speedMult;
 
       // Horizontal movement
@@ -613,11 +634,12 @@ export default function Racing({ socket }: Props) {
         if (Math.abs(p.vx) < 0.05) p.vx = 0;
       }
 
-      // Jump
-      if (wJump && p.onGround && !p.alreadyJumped) {
+      // Jump — costs 12 stamina
+      if (wJump && p.onGround && !p.alreadyJumped && p.stamina >= 12) {
         p.vy = physics.jumpForce;
         p.onGround = false;
         p.alreadyJumped = true;
+        p.stamina = Math.max(0, p.stamina - 12);
         jumpRef.current = false;
       }
       if (!wJump) {
@@ -667,10 +689,10 @@ export default function Racing({ socket }: Props) {
         p.worldY   = GROUND_Y;
         p.vx = 0; p.vy = 0;
         if (!p.invincible) {
-          p.health = Math.max(0, p.health - 20);
+          p.health = Math.max(0, p.health - 15); // reduced from 20
           p.hits++;
         }
-        p.invincible = 100;
+        p.invincible = 120;
         p.explosions.push({ x: p.worldX, y: CH - 40, frame: 0, timer: 0 });
       }
 
@@ -683,9 +705,9 @@ export default function Racing({ socket }: Props) {
           const hBot   = p.worldY;
 
           if (hRight > obs.x && hLeft < obs.x + obs.w && hBot > obs.y && hTop < obs.y + obs.h) {
-            p.health = Math.max(0, p.health - 25);
+            p.health = Math.max(0, p.health - 15); // reduced from 25
             p.hits++;
-            p.invincible = 80;
+            p.invincible = 100;
             p.vy = -7; // bounce up
             p.vx = p.facing === 1 ? -4 : 4; // knock back
             p.explosions.push({ x: p.worldX, y: p.worldY - 20, frame: 0, timer: 0 });
@@ -699,8 +721,15 @@ export default function Racing({ socket }: Props) {
 
       // ── Stamina ───────────────────────────────────────────────────────────
       const moving = Math.abs(p.vx) > 0.5;
-      const drain  = (moving ? physics.staminaDrain : physics.staminaDrain * 0.3) * sectionStaminaMod;
-      p.stamina = Math.max(0, p.stamina - drain * dt);
+      if (moving) {
+        // Drain stamina — sprinting drains 3x faster
+        const sprintDrainMult = p.sprinting ? 3 : 1;
+        const drain = physics.staminaDrain * sectionStaminaMod * sprintDrainMult;
+        p.stamina = Math.max(0, p.stamina - drain * dt);
+      } else if (p.onGround) {
+        // Regenerate stamina when standing still on ground
+        p.stamina = Math.min(100, p.stamina + 0.25 * dt);
+      }
 
       // ── Animation state ───────────────────────────────────────────────────
       if (!p.onGround) p.state = 'jump';
@@ -956,13 +985,26 @@ export default function Racing({ socket }: Props) {
       ctx.restore();
 
       // ── HUD ───────────────────────────────────────────────────────────
-      // Health bar
-      const hpColor = p.health > 60 ? '#39ff14' : p.health > 30 ? '#ffd700' : '#ff073a';
-      drawBar(ctx, 14, 14, 150, 12, p.health / 100, hpColor, 'HP');
+      // Health bar (out of 200)
+      const hpPct = p.health / p.maxHealth;
+      const hpColor = hpPct > 0.5 ? '#39ff14' : hpPct > 0.25 ? '#ffd700' : '#ff073a';
+      drawBar(ctx, 14, 14, 150, 12, hpPct, hpColor, 'HP');
 
       // Stamina bar
       const stColor = p.stamina > 50 ? '#00d4ff' : p.stamina > 25 ? '#ffd700' : '#ff6b35';
       drawBar(ctx, 14, 34, 150, 12, p.stamina / 100, stColor, 'EN');
+
+      // Sprint indicator
+      if (p.sprinting && statusRef.current === 'playing') {
+        ctx.save();
+        ctx.fillStyle = '#ff6b35';
+        ctx.shadowColor = '#ff6b35';
+        ctx.shadowBlur = 8;
+        ctx.font = '8px "Press Start 2P"';
+        ctx.textAlign = 'left';
+        ctx.fillText('SPRINT!', 170, 24);
+        ctx.restore();
+      }
 
       // Timer (top right) — shows elapsed AND remaining time
       if (statusRef.current === 'playing' || statusRef.current === 'complete') {
@@ -1026,7 +1068,7 @@ export default function Racing({ socket }: Props) {
         ctx.fillStyle = 'rgba(0,212,255,0.8)';
         ctx.font = '7px "Press Start 2P"';
         ctx.textAlign = 'center';
-        ctx.fillText('[SPACE / UP] JUMP     [A / D  or  ARROWS] MOVE', CW / 2, CH - 10);
+        ctx.fillText('[SPACE] JUMP  [A/D or ARROWS] MOVE  [SHIFT] SPRINT', CW / 2, CH - 10);
         ctx.restore();
       }
 
@@ -1064,7 +1106,7 @@ export default function Racing({ socket }: Props) {
 
       // React HUD state update every ~6 frames
       if (Math.random() < 0.17) {
-        setHudData({ health: p.health, stamina: p.stamina, time: p.elapsed });
+        setHudData({ health: (p.health / p.maxHealth) * 100, stamina: p.stamina, time: p.elapsed });
       }
     }
 
@@ -1163,7 +1205,7 @@ export default function Racing({ socket }: Props) {
             style={{ imageRendering: 'pixelated' }}
           />
         </div>
-        <p className="font-pixel text-[8px] text-retro-white/30 mt-4">
+        <p className="font-retro text-lg text-retro-white/30 mt-4">
           {PLANET_LABELS[planetKey]} — YOUR TURN WILL COME
         </p>
       </div>
@@ -1175,7 +1217,7 @@ export default function Racing({ socket }: Props) {
       {/* Header */}
       <div className="flex items-center gap-6 mb-3 w-full max-w-3xl">
         <div>
-          <p className="font-pixel text-[8px] text-retro-white/40">RACING ON</p>
+          <p className="font-retro text-lg text-retro-white/40">RACING ON</p>
           <p className="font-pixel text-sm glow-text-cyan" style={{ color: colors.accent }}>
             {PLANET_LABELS[planetKey]}
           </p>
@@ -1185,14 +1227,14 @@ export default function Racing({ socket }: Props) {
         {gameStatus === 'playing' && (
           <>
             <div className="text-right">
-              <p className="font-pixel text-[7px] text-retro-white/40">HEALTH</p>
+              <p className="font-retro text-lg text-retro-white/40">HEALTH</p>
               <div className="stat-bar w-28 mt-1">
                 <div className="stat-bar-fill"
                   style={{ width: `${hudData.health}%`, background: hudData.health > 60 ? '#39ff14' : hudData.health > 30 ? '#ffd700' : '#ff073a' }} />
               </div>
             </div>
             <div className="text-right">
-              <p className="font-pixel text-[7px] text-retro-white/40">ENERGY</p>
+              <p className="font-retro text-lg text-retro-white/40">ENERGY</p>
               <div className="stat-bar w-28 mt-1">
                 <div className="stat-bar-fill"
                   style={{ width: `${hudData.stamina}%`, background: '#00d4ff' }} />
@@ -1246,7 +1288,7 @@ export default function Racing({ socket }: Props) {
             {/* Config summary */}
             {me?.config && (
               <div className="pixel-card mb-4 text-left">
-                <p className="font-pixel text-[8px] text-retro-cyan mb-2">YOUR BUILD</p>
+                <p className="font-retro text-lg text-retro-cyan mb-2">YOUR BUILD</p>
                 <div className="grid grid-cols-2 gap-3 text-[7px]">
                   <div>
                     <p className="text-retro-white/40 mb-1">MUSCLES TRAINED</p>
@@ -1272,7 +1314,7 @@ export default function Racing({ socket }: Props) {
             <button onClick={startRace} className="btn-pink text-lg px-10 py-4 animate-pixel-pulse">
               START RACE
             </button>
-            <p className="font-pixel text-[7px] text-retro-white/30 mt-3">
+            <p className="font-retro text-lg text-retro-white/30 mt-3">
               USE ARROW KEYS OR WASD + SPACE TO JUMP
             </p>
           </div>
@@ -1291,21 +1333,21 @@ export default function Racing({ socket }: Props) {
             <p className="font-pixel text-sm text-retro-yellow glow-text-gold text-center mb-3">RACE COMPLETE</p>
             <div className="flex justify-center gap-8 mb-4">
               <div className="text-center">
-                <p className="font-pixel text-[7px] text-retro-white/40">YOUR TIME</p>
+                <p className="font-retro text-lg text-retro-white/40">YOUR TIME</p>
                 <p className="font-pixel text-xl text-retro-cyan glow-text-cyan">
                   {pRef.current.elapsed.toFixed(2)}s
                 </p>
               </div>
               {serverResult && (
                 <div className="text-center">
-                  <p className="font-pixel text-[7px] text-retro-white/40">OFFICIAL TIME</p>
+                  <p className="font-retro text-lg text-retro-white/40">OFFICIAL TIME</p>
                   <p className="font-pixel text-xl text-retro-yellow glow-text-gold">
                     {serverResult.totalTime.toFixed(2)}s
                   </p>
                 </div>
               )}
               <div className="text-center">
-                <p className="font-pixel text-[7px] text-retro-white/40">HITS TAKEN</p>
+                <p className="font-retro text-lg text-retro-white/40">HITS TAKEN</p>
                 <p className="font-pixel text-xl text-retro-pink">
                   {pRef.current.hits}
                 </p>
@@ -1315,13 +1357,13 @@ export default function Racing({ socket }: Props) {
             {serverResult?.feedback && (
               <div className="border-t border-retro-border pt-3 mt-3 max-h-32 overflow-y-auto">
                 {serverResult.feedback.slice(0, 3).map((fb: string, i: number) => (
-                  <p key={i} className="font-pixel text-[6px] text-retro-cyan/80 mb-1">[ {fb} ]</p>
+                  <p key={i} className="font-retro text-base text-retro-cyan/80 mb-1">[ {fb} ]</p>
                 ))}
               </div>
             )}
 
             {!serverResult && (
-              <p className="font-pixel text-[8px] text-retro-white/40 text-center animate-blink">
+              <p className="font-retro text-lg text-retro-white/40 text-center animate-blink">
                 CALCULATING OFFICIAL TIME...
               </p>
             )}
