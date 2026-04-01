@@ -330,6 +330,9 @@ export default function Racing({ socket }: Props) {
     potionBoostSpeed: 1,         // active multiplier
     potionBoostJump: 1,          // active multiplier
     potionFlash: 0,              // visual flash timer
+    wasInAir: false,  // track landing for dust effect
+    // particles
+    particles: [] as { x: number; y: number; vx: number; vy: number; life: number; color: string; size: number }[],
     // explosion particles
     explosions: [] as { x: number; y: number; frame: number; timer: number }[],
   });
@@ -363,44 +366,113 @@ export default function Racing({ socket }: Props) {
     // Size scales with mass
     const massScale = (myConfig.mass || 70) / 70; // 1.0 at 70kg
 
-    // Draw a pixel character at given pose
+    // Pixel helper with optional outline
+    const px = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, color: string) => {
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, w, h);
+    };
+    const outline = '#111122';
+    // Lighter/darker shade helpers
+    const lighter = (hex: string) => {
+      const r = Math.min(255, parseInt(hex.slice(1,3),16) + 40);
+      const g = Math.min(255, parseInt(hex.slice(3,5),16) + 40);
+      const b = Math.min(255, parseInt(hex.slice(5,7),16) + 40);
+      return `rgb(${r},${g},${b})`;
+    };
+    const darker = (hex: string) => {
+      const r = Math.max(0, parseInt(hex.slice(1,3),16) - 50);
+      const g = Math.max(0, parseInt(hex.slice(3,5),16) - 50);
+      const b = Math.max(0, parseInt(hex.slice(5,7),16) - 50);
+      return `rgb(${r},${g},${b})`;
+    };
+    const skinLight = '#ffe0b2';
+    const skinDark = '#d4a574';
+    const bootColor = '#443366';
+    const bootLight = '#554488';
+
+    // Draw a detailed pixel character at given pose
     function drawChar(ctx: CanvasRenderingContext2D, legOffset: number, armOffset: number, squish = 0) {
       const cx = 37, by = 46;
-      // Head
-      ctx.fillStyle = pSkin;
-      ctx.fillRect(cx - 5, by - 22 - squish, 10, 10);
-      // Hair
-      ctx.fillStyle = pHair;
-      ctx.fillRect(cx - 6, by - 23 - squish, 12, 4);
-      // Eyes
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(cx - 3, by - 18 - squish, 3, 3);
-      ctx.fillRect(cx + 1, by - 18 - squish, 3, 3);
-      ctx.fillStyle = '#222244';
-      ctx.fillRect(cx - 2, by - 17 - squish, 2, 2);
-      ctx.fillRect(cx + 2, by - 17 - squish, 2, 2);
-      // Body
-      ctx.fillStyle = pColor;
-      ctx.fillRect(cx - 6, by - 12, 12, 12);
+
+      // === OUTLINE LAYER (drawn first, slightly larger) ===
+      // Head outline
+      px(ctx, cx-6, by-24-squish, 12, 12, outline);
+      // Body outline
+      px(ctx, cx-7, by-13, 14, 15, outline);
+      // Leg outlines
+      px(ctx, cx-6, by+1, 5, 10+legOffset, outline);
+      px(ctx, cx, by+1, 5, 10-legOffset, outline);
+      // Arm outlines
+      px(ctx, cx-11, by-12+armOffset, 5, 10, outline);
+      px(ctx, cx+6, by-12-armOffset, 5, 10, outline);
+
+      // === HAIR (helmet/headband style) ===
+      px(ctx, cx-5, by-23-squish, 10, 5, pHair);
+      px(ctx, cx-4, by-24-squish, 8, 2, pHair); // top tuft
+      // Hair highlight
+      px(ctx, cx-3, by-23-squish, 3, 1, lighter(pHair));
+
+      // === HEAD ===
+      px(ctx, cx-5, by-22-squish, 10, 10, pSkin);
+      // Forehead highlight
+      px(ctx, cx-4, by-21-squish, 8, 2, skinLight);
+      // Jaw shadow
+      px(ctx, cx-4, by-14-squish, 8, 2, skinDark);
+      // Eyes - white sclera
+      px(ctx, cx-4, by-19-squish, 3, 3, '#ffffff');
+      px(ctx, cx+1, by-19-squish, 3, 3, '#ffffff');
+      // Pupils
+      px(ctx, cx-3, by-18-squish, 2, 2, '#222244');
+      px(ctx, cx+2, by-18-squish, 2, 2, '#222244');
+      // Eye highlights
+      px(ctx, cx-4, by-19-squish, 1, 1, '#aaccff');
+      px(ctx, cx+1, by-19-squish, 1, 1, '#aaccff');
+      // Mouth
+      px(ctx, cx-1, by-14-squish, 3, 1, skinDark);
+
+      // === BODY (jersey) ===
+      px(ctx, cx-6, by-12, 12, 12, pColor);
+      // Jersey highlight (left side light)
+      px(ctx, cx-5, by-11, 3, 8, lighter(pColor));
+      // Jersey shadow (right side)
+      px(ctx, cx+3, by-11, 3, 8, darker(pColor));
+      // Jersey number/stripe
+      px(ctx, cx-2, by-9, 4, 1, '#ffffff44');
+      px(ctx, cx-2, by-6, 4, 1, '#ffffff44');
       // Belt
-      ctx.fillStyle = pDark;
-      ctx.fillRect(cx - 6, by - 2, 12, 2);
-      // Arms
-      ctx.fillStyle = pColor;
-      ctx.fillRect(cx - 10, by - 11 + armOffset, 4, 8);
-      ctx.fillRect(cx + 6, by - 11 - armOffset, 4, 8);
-      // Hands
-      ctx.fillStyle = pSkin;
-      ctx.fillRect(cx - 10, by - 4 + armOffset, 4, 3);
-      ctx.fillRect(cx + 6, by - 4 - armOffset, 4, 3);
-      // Legs
-      ctx.fillStyle = pDark;
-      ctx.fillRect(cx - 5, by, 4, 8 + legOffset);
-      ctx.fillRect(cx + 1, by, 4, 8 - legOffset);
-      // Boots
-      ctx.fillStyle = '#443366';
-      ctx.fillRect(cx - 6, by + 7 + legOffset, 5, 3);
-      ctx.fillRect(cx, by + 7 - legOffset, 5, 3);
+      px(ctx, cx-6, by-2, 12, 2, pDark);
+      px(ctx, cx-5, by-1, 2, 1, '#888888'); // buckle
+
+      // === ARMS ===
+      // Left arm
+      px(ctx, cx-10, by-11+armOffset, 4, 8, pColor);
+      px(ctx, cx-10, by-11+armOffset, 1, 8, lighter(pColor));
+      // Left hand
+      px(ctx, cx-10, by-4+armOffset, 4, 3, pSkin);
+      px(ctx, cx-10, by-4+armOffset, 1, 2, skinLight);
+      // Right arm
+      px(ctx, cx+6, by-11-armOffset, 4, 8, pColor);
+      px(ctx, cx+9, by-11-armOffset, 1, 8, darker(pColor));
+      // Right hand
+      px(ctx, cx+6, by-4-armOffset, 4, 3, pSkin);
+      px(ctx, cx+6, by-4-armOffset, 1, 2, skinLight);
+
+      // === LEGS ===
+      // Left leg
+      px(ctx, cx-5, by, 4, 8+legOffset, pDark);
+      px(ctx, cx-5, by, 1, 8+legOffset, lighter(pDark));
+      // Right leg
+      px(ctx, cx+1, by, 4, 8-legOffset, pDark);
+      px(ctx, cx+4, by, 1, 8-legOffset, darker(pDark));
+
+      // === BOOTS ===
+      px(ctx, cx-6, by+7+legOffset, 5, 3, bootColor);
+      px(ctx, cx-6, by+7+legOffset, 5, 1, bootLight); // top highlight
+      px(ctx, cx, by+7-legOffset, 5, 3, bootColor);
+      px(ctx, cx, by+7-legOffset, 5, 1, bootLight);
+      // Sole
+      px(ctx, cx-6, by+9+legOffset, 5, 1, '#221133');
+      px(ctx, cx, by+9-legOffset, 5, 1, '#221133');
     }
 
     // Idle frames (subtle breathing)
@@ -790,6 +862,45 @@ export default function Racing({ socket }: Props) {
         p.stamina = Math.min(100, p.stamina + 0.25 * dt);
       }
 
+      // ── Dust particles — landing and sprinting ─────────────────────────
+      if (p.onGround && p.wasInAir) {
+        // Landing dust burst
+        for (let i = 0; i < 6; i++) {
+          p.particles.push({
+            x: p.worldX + (Math.random() - 0.5) * 20,
+            y: GROUND_Y - 2,
+            vx: (Math.random() - 0.5) * 2,
+            vy: -(Math.random() * 1.5 + 0.5),
+            life: 20 + Math.random() * 15,
+            color: colors.ground,
+            size: Math.random() * 3 + 2,
+          });
+        }
+      }
+      p.wasInAir = !p.onGround;
+
+      // Sprint dust (every few frames)
+      if (p.sprinting && p.onGround && Math.random() < 0.3) {
+        p.particles.push({
+          x: p.worldX - p.facing * 10,
+          y: GROUND_Y - 2,
+          vx: -p.facing * (Math.random() * 1 + 0.5),
+          vy: -(Math.random() * 0.8),
+          life: 12 + Math.random() * 8,
+          color: '#ffffff',
+          size: Math.random() * 2 + 1,
+        });
+      }
+
+      // Update particles
+      p.particles = p.particles.filter(pt => pt.life > 0);
+      for (const pt of p.particles) {
+        pt.x += pt.vx;
+        pt.y += pt.vy;
+        pt.vy += 0.05; // gravity on particles
+        pt.life -= 1;
+      }
+
       // ── Animation state ───────────────────────────────────────────────────
       if (!p.onGround) p.state = 'jump';
       else if (Math.abs(p.vx) > 0.3) p.state = 'run';
@@ -896,124 +1007,239 @@ export default function Racing({ socket }: Props) {
         ctx.restore();
       }
 
-      // ── Platforms ─────────────────────────────────────────────────────
+      // ── Platforms (SMW-style with depth) ────────────────────────────
       for (const plat of level.platforms) {
-        const px = plat.x - camX;
-        if (px > CW + 100 || px + plat.w < -100) continue;
-        // platform body
-        ctx.fillStyle = colors.platform + '33';
-        ctx.fillRect(px, plat.surfaceY, plat.w, 10);
-        // platform top edge (neon line)
+        const ppx = plat.x - camX;
+        if (ppx > CW + 100 || ppx + plat.w < -100) continue;
+        const platH = 14;
+        // Shadow underneath
+        ctx.fillStyle = 'rgba(0,0,0,0.4)';
+        ctx.fillRect(ppx + 3, plat.surfaceY + platH, plat.w, 4);
+        // Main body (darker)
+        ctx.fillStyle = colors.ground;
+        ctx.fillRect(ppx, plat.surfaceY + 3, plat.w, platH - 3);
+        // Top surface (bright)
         ctx.fillStyle = colors.platform;
-        ctx.fillRect(px, plat.surfaceY, plat.w, 3);
-        // end caps
+        ctx.fillRect(ppx, plat.surfaceY, plat.w, 4);
+        // Top highlight
         ctx.fillStyle = colors.platform + 'cc';
-        ctx.fillRect(px,              plat.surfaceY, 4, 10);
-        ctx.fillRect(px + plat.w - 4, plat.surfaceY, 4, 10);
-        // glow
+        ctx.fillRect(ppx + 1, plat.surfaceY, plat.w - 2, 1);
+        // Brick pattern on body
+        ctx.fillStyle = 'rgba(0,0,0,0.15)';
+        for (let bx = ppx; bx < ppx + plat.w; bx += 16) {
+          ctx.fillRect(bx, plat.surfaceY + 3, 1, platH - 3);
+        }
+        ctx.fillRect(ppx, plat.surfaceY + 8, plat.w, 1);
+        // End caps (vertical lines)
+        ctx.fillStyle = colors.platform + '88';
+        ctx.fillRect(ppx, plat.surfaceY, 2, platH);
+        ctx.fillRect(ppx + plat.w - 2, plat.surfaceY, 2, platH);
+        // Glow
         ctx.save();
         ctx.shadowColor = colors.platform;
-        ctx.shadowBlur  = 8;
-        ctx.fillStyle   = colors.platform;
-        ctx.fillRect(px, plat.surfaceY, plat.w, 3);
+        ctx.shadowBlur = 10;
+        ctx.fillStyle = colors.platform;
+        ctx.fillRect(ppx, plat.surfaceY, plat.w, 2);
         ctx.restore();
       }
 
-      // ── Ground ────────────────────────────────────────────────────────
+      // ── Ground (SMW-style tiled terrain) ──────────────────────────
       for (const seg of level.groundSegs) {
         const sx = seg.x - camX;
         if (sx > CW + 200 || sx + seg.w < -200) continue;
+        const gh = CH - GROUND_Y;
 
-        // Ground fill
+        // Main ground fill
         ctx.fillStyle = colors.ground;
-        ctx.fillRect(sx, GROUND_Y, seg.w, CH - GROUND_Y);
+        ctx.fillRect(sx, GROUND_Y, seg.w, gh);
 
-        // Ground surface line (neon)
-        ctx.fillStyle = colors.platform + 'cc';
-        ctx.fillRect(sx, GROUND_Y, seg.w, 3);
+        // Surface layer (top 4px — grass/rock)
+        ctx.fillStyle = colors.platform;
+        ctx.fillRect(sx, GROUND_Y, seg.w, 4);
+        // Surface highlight
+        ctx.fillStyle = colors.platform + 'dd';
+        ctx.fillRect(sx, GROUND_Y, seg.w, 1);
 
-        // Ground tile pattern
-        ctx.fillStyle = 'rgba(0,0,0,0.2)';
-        for (let gx = Math.max(sx, 0); gx < Math.min(sx + seg.w, CW); gx += 16) {
-          if (((gx + Math.floor(camX)) / 16 | 0) % 3 === 0) {
-            ctx.fillRect(gx, GROUND_Y + 3, 16, 6);
+        // Brick/tile pattern (visible depth)
+        const tileSize = 16;
+        for (let row = 0; row < 3; row++) {
+          const rowY = GROUND_Y + 4 + row * tileSize;
+          const rowOffset = row % 2 === 0 ? 0 : tileSize / 2;
+          ctx.fillStyle = row === 0 ? 'rgba(0,0,0,0.08)' : 'rgba(0,0,0,0.12)';
+          // Horizontal mortar line
+          ctx.fillRect(sx, rowY, seg.w, 1);
+          // Vertical mortar lines
+          for (let tx = sx + rowOffset; tx < sx + seg.w; tx += tileSize) {
+            ctx.fillRect(tx, rowY, 1, tileSize);
           }
+          // Highlight on top-left of each brick
+          ctx.fillStyle = 'rgba(255,255,255,0.05)';
+          for (let tx = sx + rowOffset; tx < sx + seg.w; tx += tileSize) {
+            ctx.fillRect(tx + 1, rowY + 1, tileSize - 2, 1);
+            ctx.fillRect(tx + 1, rowY + 1, 1, tileSize - 2);
+          }
+          // Shadow on bottom-right of each brick
+          ctx.fillStyle = 'rgba(0,0,0,0.1)';
+          for (let tx = sx + rowOffset; tx < sx + seg.w; tx += tileSize) {
+            ctx.fillRect(tx + 1, rowY + tileSize - 1, tileSize - 2, 1);
+            ctx.fillRect(tx + tileSize - 1, rowY + 1, 1, tileSize - 2);
+          }
+        }
+
+        // Darker depth below tiles
+        ctx.fillStyle = 'rgba(0,0,0,0.25)';
+        ctx.fillRect(sx, GROUND_Y + 4 + 3 * tileSize, seg.w, gh - 4 - 3 * tileSize);
+
+        // Edge detail — left and right cliff faces
+        if (seg.x > 0) {
+          ctx.fillStyle = 'rgba(0,0,0,0.3)';
+          ctx.fillRect(sx, GROUND_Y + 4, 2, gh - 4);
         }
 
         // Glow on top edge
         ctx.save();
         ctx.shadowColor = colors.platform;
-        ctx.shadowBlur  = 6;
-        ctx.fillStyle   = colors.platform;
+        ctx.shadowBlur = 8;
+        ctx.fillStyle = colors.platform;
         ctx.fillRect(sx, GROUND_Y, seg.w, 2);
         ctx.restore();
       }
 
-      // ── Obstacles ─────────────────────────────────────────────────────
+      // ── Obstacles (detailed pixel art) ────────────────────────────
       for (const obs of level.obstacles) {
         const ox = obs.x - camX;
         if (ox > CW + 60 || ox + obs.w < -60) continue;
 
         if (obs.type === 'spike') {
-          // Triangular spike
-          const cx = ox + obs.w / 2;
+          // Multi-layer spike with metallic look
+          const scx = ox + obs.w / 2;
           ctx.save();
           ctx.shadowColor = '#ff073a';
-          ctx.shadowBlur  = 6;
-          ctx.fillStyle   = '#cc0022';
+          ctx.shadowBlur = 8;
+          // Base
+          ctx.fillStyle = '#661111';
+          ctx.fillRect(ox - 1, obs.y + obs.h - 4, obs.w + 2, 4);
+          // Spike body (dark)
+          ctx.fillStyle = '#880022';
           ctx.beginPath();
-          ctx.moveTo(cx, obs.y);
+          ctx.moveTo(scx, obs.y);
           ctx.lineTo(ox, obs.y + obs.h);
           ctx.lineTo(ox + obs.w, obs.y + obs.h);
           ctx.closePath();
           ctx.fill();
+          // Spike highlight (left face lighter)
+          ctx.fillStyle = '#cc0033';
+          ctx.beginPath();
+          ctx.moveTo(scx, obs.y);
+          ctx.lineTo(scx, obs.y + obs.h);
+          ctx.lineTo(ox, obs.y + obs.h);
+          ctx.closePath();
+          ctx.fill();
+          // Tip glow
+          ctx.fillStyle = '#ff3366';
+          ctx.fillRect(scx - 1, obs.y, 2, 4);
+          // Outline
           ctx.strokeStyle = '#ff073a';
-          ctx.lineWidth = 1.5;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(scx, obs.y);
+          ctx.lineTo(ox, obs.y + obs.h);
+          ctx.lineTo(ox + obs.w, obs.y + obs.h);
+          ctx.closePath();
           ctx.stroke();
           ctx.restore();
         } else {
-          // Block obstacle
+          // Block obstacle — SMW-style question/crate block
           ctx.save();
           ctx.shadowColor = '#ff6b35';
-          ctx.shadowBlur  = 8;
+          ctx.shadowBlur = 6;
+          // Shadow
+          ctx.fillStyle = 'rgba(0,0,0,0.4)';
+          ctx.fillRect(ox + 3, obs.y + 3, obs.w, obs.h);
           // Main body
-          ctx.fillStyle = '#2a1a0a';
+          ctx.fillStyle = '#3a2208';
           ctx.fillRect(ox, obs.y, obs.w, obs.h);
-          // Border
-          ctx.strokeStyle = '#ff6b35';
-          ctx.lineWidth = 2;
-          ctx.strokeRect(ox + 1, obs.y + 1, obs.w - 2, obs.h - 2);
-          // Warning stripes
-          ctx.fillStyle = 'rgba(255,107,53,0.15)';
-          for (let si = 0; si < obs.h; si += 10) {
-            ctx.fillRect(ox, obs.y + si, obs.w, 5);
-          }
-          // Top cap
-          ctx.fillStyle = '#ff6b35';
+          // Top highlight
+          ctx.fillStyle = '#5a3a18';
           ctx.fillRect(ox, obs.y, obs.w, 3);
+          // Left highlight
+          ctx.fillStyle = '#4a2a10';
+          ctx.fillRect(ox, obs.y, 3, obs.h);
+          // Right shadow
+          ctx.fillStyle = '#2a1608';
+          ctx.fillRect(ox + obs.w - 3, obs.y, 3, obs.h);
+          // Bottom shadow
+          ctx.fillStyle = '#1a0c04';
+          ctx.fillRect(ox, obs.y + obs.h - 3, obs.w, 3);
+          // Inner border
+          ctx.strokeStyle = '#ff6b35';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(ox + 3, obs.y + 3, obs.w - 6, obs.h - 6);
+          // Warning symbol — diagonal hazard stripes
+          ctx.fillStyle = 'rgba(255,107,53,0.2)';
+          for (let si = -obs.h; si < obs.w + obs.h; si += 8) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(ox + si, obs.y + obs.h);
+            ctx.lineTo(ox + si + obs.h, obs.y);
+            ctx.lineTo(ox + si + obs.h + 4, obs.y);
+            ctx.lineTo(ox + si + 4, obs.y + obs.h);
+            ctx.closePath();
+            ctx.clip();
+            ctx.fillRect(ox, obs.y, obs.w, obs.h);
+            ctx.restore();
+          }
+          // Top cap glow
+          ctx.fillStyle = '#ff6b35';
+          ctx.fillRect(ox + 2, obs.y, obs.w - 4, 2);
           ctx.restore();
         }
       }
 
-      // ── Finish line ───────────────────────────────────────────────────
+      // ── Finish line (SMW flagpole style) ──────────────────────────
       const fx = level.finishX - camX;
       if (fx > -20 && fx < CW + 20) {
         ctx.save();
         ctx.shadowColor = '#ffd700';
-        ctx.shadowBlur  = 16;
-        // Checkered pole
-        for (let fy = GROUND_Y - 70; fy < GROUND_Y; fy += 8) {
-          ctx.fillStyle = (fy / 8 | 0) % 2 === 0 ? '#ffd700' : '#ffffff';
-          ctx.fillRect(fx - 2, fy, 4, 8);
-        }
-        // Horizontal tape
+        ctx.shadowBlur = 16;
+        // Pole
+        ctx.fillStyle = '#888888';
+        ctx.fillRect(fx - 2, GROUND_Y - 90, 4, 90);
+        ctx.fillStyle = '#aaaaaa';
+        ctx.fillRect(fx - 1, GROUND_Y - 90, 2, 90);
+        // Pole top ball
         ctx.fillStyle = '#ffd700';
-        ctx.fillRect(fx - 2, GROUND_Y - 70, 4, 8);
+        ctx.beginPath();
+        ctx.arc(fx, GROUND_Y - 92, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ffee88';
+        ctx.beginPath();
+        ctx.arc(fx - 1, GROUND_Y - 93, 2, 0, Math.PI * 2);
+        ctx.fill();
+        // Flag (checkered)
+        const flagW = 32, flagH = 20;
+        const flagX = fx + 3, flagY = GROUND_Y - 88;
+        for (let fy = 0; fy < flagH; fy += 4) {
+          for (let ffx = 0; ffx < flagW; ffx += 4) {
+            const checker = ((fy / 4 | 0) + (ffx / 4 | 0)) % 2;
+            ctx.fillStyle = checker ? '#ffd700' : '#222222';
+            ctx.fillRect(flagX + ffx, flagY + fy, 4, 4);
+          }
+        }
+        // Flag border
+        ctx.strokeStyle = '#ffd700';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(flagX, flagY, flagW, flagH);
+        // Base
+        ctx.fillStyle = '#555555';
+        ctx.fillRect(fx - 8, GROUND_Y - 4, 16, 4);
+        ctx.fillStyle = '#777777';
+        ctx.fillRect(fx - 6, GROUND_Y - 4, 12, 1);
         // "FINISH" text
         ctx.fillStyle = '#ffd700';
-        ctx.font = '9px "Press Start 2P"';
+        ctx.font = '8px "Press Start 2P"';
         ctx.textAlign = 'center';
-        ctx.fillText('FINISH', fx, GROUND_Y - 78);
+        ctx.fillText('FINISH', fx + 16, flagY - 6);
         ctx.restore();
       }
 
@@ -1023,6 +1249,16 @@ export default function Racing({ socket }: Props) {
         if (!img) continue;
         const ex_cx = ex.x - camX;
         ctx.drawImage(img, ex_cx - 24, ex.y - 24, 48, 48);
+      }
+
+      // ── Dust/sprint particles ───────────────────────────────────────
+      for (const pt of p.particles) {
+        const ptx = pt.x - camX;
+        ctx.save();
+        ctx.globalAlpha = Math.min(1, pt.life / 10);
+        ctx.fillStyle = pt.color;
+        ctx.fillRect(ptx, pt.y, pt.size, pt.size);
+        ctx.restore();
       }
 
       // ── Player sprite ─────────────────────────────────────────────────
