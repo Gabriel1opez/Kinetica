@@ -1,7 +1,7 @@
 import { Server, Socket } from 'socket.io';
 import { v4 as uuid } from 'uuid';
 import {
-  GameRoom, Player, GamePhase, Planet, PlayerConfig, Potion,
+  GameRoom, Player, GamePhase, Planet, PlayerConfig, Potion, RaceResult,
 } from './types';
 import { DEFAULT_PLAYER_CONFIG, RECIPES } from './constants';
 import { simulateRace } from './performanceEngine';
