@@ -20,9 +20,9 @@ const PLANET_GRAV: Record<string, number> = {
 };
 
 const PLANET_COLORS: Record<string, { sky1: string; sky2: string; ground: string; platform: string; accent: string }> = {
-  earth:   { sky1: '#050514', sky2: '#0a0a28', ground: '#1a3a1a', platform: '#39ff14', accent: '#00d4ff' },
-  mars:    { sky1: '#100508', sky2: '#200a0a', ground: '#3a1a0a', platform: '#ff6b35', accent: '#ff3366' },
-  mercury: { sky1: '#050510', sky2: '#0a0a14', ground: '#1a1a2a', platform: '#aaaacc', accent: '#ccccff' },
+  earth:   { sky1: '#5ecfef', sky2: '#87ceeb', ground: '#5c3d1e', platform: '#4a9a3d', accent: '#2a7a2a' },
+  mars:    { sky1: '#c0622a', sky2: '#8b3a10', ground: '#6b2c0a', platform: '#cd5c1a', accent: '#ff8c42' },
+  mercury: { sky1: '#2a2a4a', sky2: '#151530', ground: '#3a3a5a', platform: '#8888bb', accent: '#ccccff' },
 };
 
 const PLANET_LABELS: Record<string, string> = {
@@ -216,7 +216,7 @@ function getPlayerPhysics(config: any, planet: string) {
 
   // Speed: quadriceps and ATP-PC energy give more sprint
   const maxSpeed = (3.4 + (m.quadriceps ? 2.2 : 0) + (m.hamstrings ? 0.5 : 0) +
-                   (e.atpPc > 50 ? 1.2 : 0)) * (70 / mass) * 0.38;
+                   (e.atpPc > 50 ? 1.2 : 0)) * (70 / mass) * 0.65;
 
   // Jump force: calves are critical, hamstrings help
   const jumpForce = -(10.5 + (m.calves ? 3.5 : 0) + (m.hamstrings ? 1.2 : 0));
@@ -245,7 +245,7 @@ function getPlayerPhysics(config: any, planet: string) {
   }
 
   return {
-    maxSpeed:    Math.min(maxSpeed * potionSpeedMult, 7.5),
+    maxSpeed:    Math.min(maxSpeed * potionSpeedMult, 12.0),
     jumpForce:   jumpForce * potionJumpMult,
     gravity,
     accel,

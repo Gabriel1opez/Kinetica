@@ -25,7 +25,7 @@ export default function MainMenu({ socket, onJoined }: Props) {
   const [loading, setLoading] = useState(false);
   const heroRef = useRef<HTMLCanvasElement>(null);
 
-  // Hero canvas animation
+  // Retrowave hero canvas
   useEffect(() => {
     const canvas = heroRef.current;
     if (!canvas) return;
@@ -37,85 +37,112 @@ export default function MainMenu({ socket, onJoined }: Props) {
       t += 0.016;
       ctx.clearRect(0, 0, W, H);
 
-      // Deep sky gradient
+      // Deep purple-black sky background
       const sky = ctx.createLinearGradient(0, 0, 0, H);
-      sky.addColorStop(0, '#020210');
-      sky.addColorStop(1, '#0a0a28');
+      sky.addColorStop(0,   '#120824');
+      sky.addColorStop(0.5, '#1e0d40');
+      sky.addColorStop(1,   '#2a0a50');
       ctx.fillStyle = sky;
       ctx.fillRect(0, 0, W, H);
 
-      // Grid floor (perspective)
-      const horizon = H * 0.55;
+      // Retrowave striped sun circle
+      const cx = W / 2, cy = H * 0.52, r = H * 0.38;
       ctx.save();
-      ctx.strokeStyle = 'rgba(0,212,255,0.18)';
-      ctx.lineWidth = 1;
-      // Horizontal lines
-      for (let i = 0; i <= 8; i++) {
-        const y = horizon + (H - horizon) * (i / 8) ** 1.5;
-        ctx.globalAlpha = 0.1 + 0.5 * (i / 8);
-        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
-      }
-      // Vertical lines (converge to vanishing point)
-      ctx.globalAlpha = 1;
-      const vp = W / 2;
-      for (let i = -8; i <= 8; i++) {
-        const xBot = vp + i * (W / 10);
-        ctx.globalAlpha = 0.08 + 0.04 * Math.abs(i);
-        ctx.beginPath();
-        ctx.moveTo(vp + i * 12, horizon);
-        ctx.lineTo(xBot, H);
-        ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.clip();
+
+      // Gradient fill inside circle
+      const sunGrad = ctx.createLinearGradient(cx, cy - r, cx, cy + r);
+      sunGrad.addColorStop(0,    '#5b8cff');
+      sunGrad.addColorStop(0.25, '#a855f7');
+      sunGrad.addColorStop(0.45, '#e040fb');
+      sunGrad.addColorStop(0.6,  '#ff6ec7');
+      sunGrad.addColorStop(0.75, '#ff6b35');
+      sunGrad.addColorStop(1,    '#ffd700');
+      ctx.fillStyle = sunGrad;
+      ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+
+      // Horizontal stripes (retrowave effect) — lower half only
+      ctx.fillStyle = '#1e0d40';
+      const stripeStart = cy + r * 0.1;
+      const stripeCount = 12;
+      for (let i = 0; i < stripeCount; i++) {
+        const progress = i / stripeCount;
+        const y = stripeStart + (r * 0.9) * (progress ** 1.6);
+        const thickness = Math.max(1, (r * 0.9 / stripeCount) * (1 - progress * 0.6));
+        ctx.fillRect(cx - r, y, r * 2, thickness * 0.6);
       }
       ctx.restore();
 
-      // Scrolling neon city silhouette
+      // Sun outer glow ring
       ctx.save();
-      ctx.globalAlpha = 0.55;
-      const bldgColors = ['#0d0d3a', '#0a0a30'];
-      const bldgs = [
-        [0,60,80,90],[90,40,60,110],[160,70,50,100],[220,35,70,120],
-        [300,55,65,95],[375,45,55,115],[440,65,75,105],[520,30,55,125],
-        [580,60,70,100],[660,50,60,110],[730,40,75,90],[790,65,55,95],
-        [860,35,60,120],[930,55,70,100],[1010,45,55,115],
-      ];
-      const scrollX = (t * 18) % 320;
-      for (let rep = -1; rep <= 2; rep++) {
-        for (const [bx, bh, bw] of bldgs) {
-          const x = (bx as number) - scrollX + rep * 320;
-          if (x > W + 100 || x + (bw as number) < -10) continue;
-          ctx.fillStyle = bldgColors[(bx as number) % 2];
-          ctx.fillRect(x, horizon - (bh as number), bw as number, bh as number);
-          // window lights
-          for (let wy = horizon - (bh as number) + 6; wy < horizon - 4; wy += 10) {
-            for (let wx = x + 4; wx < x + (bw as number) - 4; wx += 8) {
-              if ((wx + wy + Math.floor(t * 0.4)) % 3 !== 0) {
-                ctx.fillStyle = Math.random() > 0.95 ? '#ffd70066' : '#00d4ff22';
-                ctx.fillRect(wx, wy, 4, 5);
-              }
-            }
-          }
+      ctx.beginPath();
+      ctx.arc(cx, cy, r + 3, 0, Math.PI * 2);
+      ctx.strokeStyle = '#e040fb44';
+      ctx.lineWidth = 6;
+      ctx.stroke();
+      ctx.restore();
+
+      // Horizon glow bar
+      ctx.save();
+      const hGlow = ctx.createLinearGradient(0, cy, 0, cy + 30);
+      hGlow.addColorStop(0,   'rgba(224,64,251,0.5)');
+      hGlow.addColorStop(0.5, 'rgba(255,107,53,0.3)');
+      hGlow.addColorStop(1,   'rgba(255,215,0,0)');
+      ctx.fillStyle = hGlow;
+      ctx.fillRect(0, cy - 4, W, 34);
+      ctx.restore();
+
+      // Palm tree silhouettes (left)
+      const drawPalm = (px: number, py: number, sc: number) => {
+        ctx.save();
+        ctx.fillStyle = '#1a0830';
+        // Trunk
+        for (let i = 0; i < 12 * sc; i++) {
+          const tw = (2 + i * 0.15) * sc;
+          ctx.fillRect(px - tw / 2, py - i * 5 * sc, tw, 5 * sc);
         }
-      }
+        // Fronds
+        const topY = py - 12 * 5 * sc;
+        const fronds = [
+          [-1.2, -0.8], [-0.4, -1.1], [0.5, -1.0], [1.3, -0.7],
+          [-0.8, -0.5], [0.9, -0.4],
+        ];
+        for (const [fx, fy] of fronds) {
+          const ex = px + fx * 28 * sc, ey = topY + fy * 18 * sc;
+          ctx.beginPath();
+          ctx.moveTo(px, topY);
+          ctx.quadraticCurveTo(px + fx * 14 * sc, topY + fy * 9 * sc, ex, ey);
+          ctx.lineWidth = 3 * sc;
+          ctx.strokeStyle = '#1a0830';
+          ctx.stroke();
+        }
+        ctx.restore();
+      };
+
+      drawPalm(W * 0.18, H * 0.88, 0.85);
+      drawPalm(W * 0.78, H * 0.9,  0.75);
+      drawPalm(W * 0.88, H * 0.86, 1.0);
+
+      // Ground strip
+      ctx.save();
+      const groundGrad = ctx.createLinearGradient(0, H * 0.85, 0, H);
+      groundGrad.addColorStop(0, '#1a0830');
+      groundGrad.addColorStop(1, '#0d0420');
+      ctx.fillStyle = groundGrad;
+      ctx.fillRect(0, H * 0.85, W, H * 0.15);
+      // Ground glow line
+      ctx.fillStyle = 'rgba(224,64,251,0.4)';
+      ctx.fillRect(0, H * 0.85, W, 2);
       ctx.restore();
 
-      // Neon horizon glow
+      // Scanlines overlay
       ctx.save();
-      const grd = ctx.createLinearGradient(0, horizon - 30, 0, horizon + 20);
-      grd.addColorStop(0, 'rgba(255,51,102,0)');
-      grd.addColorStop(0.5, 'rgba(255,51,102,0.35)');
-      grd.addColorStop(1, 'rgba(255,51,102,0)');
-      ctx.fillStyle = grd;
-      ctx.fillRect(0, horizon - 30, W, 50);
-      ctx.restore();
-
-      // Floating particles
-      ctx.save();
-      for (let i = 0; i < 12; i++) {
-        const px = (i * 137 + t * 15) % W;
-        const py = horizon - 60 - (Math.sin(t * 0.6 + i) * 0.5 + 0.5) * 80;
-        ctx.globalAlpha = 0.4 + Math.sin(t + i) * 0.3;
-        ctx.fillStyle = i % 2 === 0 ? '#00d4ff' : '#ff3366';
-        ctx.fillRect(px, py, 2, 2);
+      ctx.globalAlpha = 0.04;
+      for (let y = 0; y < H; y += 4) {
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, y, W, 2);
       }
       ctx.restore();
 
@@ -149,21 +176,37 @@ export default function MainMenu({ socket, onJoined }: Props) {
       <div className="min-h-screen flex flex-col items-center justify-center px-4 relative">
         {/* Hero canvas */}
         <div className="w-full max-w-2xl mb-6 overflow-hidden border border-retro-border"
-          style={{ boxShadow: '0 0 40px rgba(255,51,102,0.15)' }}>
-          <canvas ref={heroRef} width={640} height={200} className="w-full" style={{ imageRendering: 'auto' }} />
+          style={{ boxShadow: '0 0 40px rgba(168,85,247,0.3)', borderColor: 'rgba(168,85,247,0.4)' }}>
+          <canvas ref={heroRef} width={640} height={220} className="w-full" style={{ imageRendering: 'auto' }} />
         </div>
 
         {/* Title */}
-        <h1 className="font-pixel text-4xl md:text-5xl text-retro-yellow glow-text-gold mb-1 text-center animate-glitch tracking-widest">
+        <h1 className="font-pixel text-4xl md:text-5xl text-retro-yellow glow-text-gold mb-1 text-center animate-glitch tracking-widest"
+          style={{ textShadow: '0 0 20px rgba(255,215,0,0.5), 3px 3px 0 rgba(0,0,0,0.8)' }}>
           KINETICA
         </h1>
-        <p className="font-pixel text-[10px] text-retro-cyan mb-2 text-center tracking-[0.25em]">
+        <p className="font-pixel text-[10px] text-retro-purple mb-2 text-center tracking-[0.25em]">
           ENGINEERED TO WIN
         </p>
-        <p className="font-retro text-lg text-retro-white/40 mb-10 text-center max-w-md leading-relaxed">
-          AN 8-BIT MULTIPLAYER SCIENCE RACING GAME<br/>
-          SPORTS MEDICINE &bull; CHEMISTRY &bull; PHYSICS
+        <p className="font-retro text-lg text-retro-white/50 mb-6 text-center max-w-md leading-relaxed">
+          MULTIPLAYER 8-BIT SCIENCE RACING GAME
         </p>
+
+        {/* Learning outcomes */}
+        <div className="w-full max-w-lg mb-8 grid grid-cols-3 gap-3">
+          {[
+            { icon: '🏃', label: 'SPORTS MED', desc: 'Muscle groups, energy systems & biomechanics determine your race stats' },
+            { icon: '⚗️', label: 'CHEMISTRY', desc: 'Combine molecules to brew performance-enhancing potions' },
+            { icon: '🌍', label: 'PHYSICS', desc: 'Gravity, momentum & Newton\'s laws vary across planets' },
+          ].map(o => (
+            <div key={o.label} className="pixel-card p-3 text-center"
+              style={{ borderColor: 'rgba(168,85,247,0.3)' }}>
+              <div className="text-2xl mb-1">{o.icon}</div>
+              <p className="font-pixel text-[8px] text-retro-purple mb-1">{o.label}</p>
+              <p className="font-retro text-[11px] text-retro-white/50 leading-tight">{o.desc}</p>
+            </div>
+          ))}
+        </div>
 
         {/* Buttons */}
         <div className="flex flex-col gap-4 w-full max-w-xs">
@@ -176,7 +219,7 @@ export default function MainMenu({ socket, onJoined }: Props) {
         </div>
 
         {/* Connection */}
-        <div className="mt-10 font-retro text-lg flex items-center gap-2">
+        <div className="mt-8 font-retro text-lg flex items-center gap-2">
           <span className={`inline-block w-2 h-2 ${socket.connected ? 'bg-retro-green' : 'bg-retro-red'}`}
             style={{ boxShadow: socket.connected ? '0 0 6px #39ff14' : '0 0 6px #ff073a' }} />
           <span className="text-retro-white/30">
